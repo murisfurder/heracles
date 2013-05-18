@@ -3,6 +3,8 @@ import ctypes as c
 from unittest import TestCase
 from heracles import Heracles, TreeNode, Tree, ListTree
 
+heracles = Heracles()
+
 def check_equal_addresses(p1, p2):
     return c.addressof(p1) == c.addressof(p2)
 
@@ -20,10 +22,14 @@ def check_serialized_equal(test, data, tree):
 
 class HeraclesTest(TestCase):
     def setUp(self):
-        self.h = Heracles()
+        self.h = heracles
         self.text = file('./test/data/sources.list').read()
         self.lens = self.h.lenses['Aptsources']
         self.tree = self.lens.get(self.text)
+
+    def tearDown(self):
+        del self.h
+        del self.tree
 
     def test_list(self):
         self.assertTrue(isinstance(self.tree, ListTree))
@@ -41,9 +47,12 @@ class HeraclesTest(TestCase):
 
 class FilterTest(TestCase):
     def setUp(self):
-        self.h = Heracles()
+        self.h = heracles
         self.text = file('./test/data/sources.list').read()
         self.lens = self.h.lenses['Aptsources']
+
+    def tearDown(self):
+        del self.h
 
     def test_filter(self):
         self.assertTrue(self.lens.check_path("/etc/apt/sources.list"))
@@ -59,7 +68,10 @@ class FilterTest(TestCase):
 
 class TreeBuildTest(TestCase):
     def setUp(self):
-        self.h = Heracles()
+        self.h = heracles
+
+    def tearDown(self):
+        del self.h
 
     def test_build_list_tree(self):
         t = self.h.new_tree()
@@ -91,13 +103,17 @@ class TreeBuildTest(TestCase):
 
 class ListTreeTest(TestCase):
     def setUp(self):
-        self.h = Heracles()
+        self.h = heracles
         t = self.h.new_tree()
         t['1'] = "a"
         t['2'] = "b"
         t['#comment'] = "Tio"
         t['3'] = "c"
         self.t = Tree.build_from_raw_tree(heracles=self.h, first=t.first)
+
+    def tearDown(self):
+        del self.h
+        del self.t
 
     def check_tree(self, node):
         self.assertEqual(node.parent, self.t.parent)
@@ -206,7 +222,7 @@ class ListTreeTest(TestCase):
 
 class TreeNodeLabelTest(TestCase):
     def setUp(self):
-        self.h = Heracles()
+        self.h = heracles
         t = self.h.new_tree()
         t['a'] = "a"
         t['#comment'] = "comment"
@@ -219,6 +235,10 @@ class TreeNodeLabelTest(TestCase):
         t['#comment'] = "comment"
         t['c'] = "c2"
         self.t = Tree.build_from_raw_tree(heracles=self.h, first=t.first)
+
+    def tearDown(self):
+        del self.h
+        del self.t
 
     def test_label(self):
         self.assertEqual(self.t['a'].value , "a")
@@ -266,8 +286,12 @@ class TreeNodeLabelTest(TestCase):
 
 class TreeTest(TestCase):
     def setUp(self):
-        self.h = Heracles()
+        self.h = heracles
         self.t = self.h.new_tree()
+
+    def tearDown(self):
+        del self.h
+        del self.t
 
     def load_tree(self):
         self.t['test1'] = "1" 
@@ -573,10 +597,14 @@ class TreeTest(TestCase):
 
 class ParsedTreeTest(TestCase):
     def setUp(self):
-        self.h = Heracles()
+        self.h = heracles
         self.text = file('./test/data/sources.list').read()
         self.lens = self.h.lenses['Aptsources']
         self.tree = self.lens.get(self.text)
+
+    def tearDown(self):
+        del self.h
+        del self.tree
 
     def check_tree(self, tree):
         struct = tree.first
@@ -593,5 +621,6 @@ class ParsedTreeTest(TestCase):
 
 if __name__ == "__main__":
     import unittest
+    import pdb; pdb.set_trace()
     unittest.main()
 
