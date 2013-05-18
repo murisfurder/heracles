@@ -621,6 +621,5 @@ class ParsedTreeTest(TestCase):
 
 if __name__ == "__main__":
     import unittest
-    import pdb; pdb.set_trace()
     unittest.main()
 
