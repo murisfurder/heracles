@@ -125,6 +125,14 @@ class LabelNodeList(object):
             i += 1
         return i
 
+    def __repr__(self):
+        return "<%s values:%s>" % (self.__class__.__name__,
+                ",".join(map(lambda x:"'%s'" % x.value, self)))
+
+    def __str__(self):
+        if len >= 1:
+            raise Exc
+
 class Tree(object):
     tree_classes = []
     node_classes = []
