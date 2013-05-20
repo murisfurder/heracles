@@ -43,7 +43,13 @@ lens parser you have two ways of doing it:
 
 Now with the lens parsed loaded you can start parsing:
 
-`>>> t = l.get(file('/etc/apt/sources.list').read())`
+```
+>>> text = file('/etc/apt/sources.list').read()
+>>> print text
+deb http://ftp.es.debian.org/debian/ squeeze main contrib non-free
+...
+>>> t = l.get(text)
+```
 
 You get a tree object, that you can modify the values using 
 standar python methods. Tree objects behave in some ways like *list*.
