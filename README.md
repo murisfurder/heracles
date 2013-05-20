@@ -41,7 +41,7 @@ lens parser you have two ways of doing it:
 
         `>>> l = h.get_lens_by_path('/etc/apt/sources.list')`
 
-Now with the lens parsed loaded you can start parsing:
+Now with the lens parser loaded you can start parsing:
 
 ```
 >>> text = file('/etc/apt/sources.list').read()
