@@ -1,5 +1,4 @@
 #! /bin/bash
-set -x
 TMP=/tmp/
 VERSION=1.0.0
 NAME=libheracles-"$VERSION"
