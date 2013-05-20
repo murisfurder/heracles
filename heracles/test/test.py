@@ -1,7 +1,10 @@
-import os
+from os.path import dirname, realpath, join
 import ctypes as c
 from unittest import TestCase
 from heracles import Heracles, TreeNode, Tree, ListTree
+
+CURRENT_DIR = dirname(realpath(__file__))
+DATA_FILE = join(CURRENT_DIR, "data/sources.list")
 
 heracles = Heracles()
 
@@ -23,7 +26,7 @@ def check_serialized_equal(test, data, tree):
 class HeraclesTest(TestCase):
     def setUp(self):
         self.h = heracles
-        self.text = file('./test/data/sources.list').read()
+        self.text = file(DATA_FILE).read()
         self.lens = self.h.lenses['Aptsources']
         self.tree = self.lens.get(self.text)
 
@@ -48,7 +51,7 @@ class HeraclesTest(TestCase):
 class FilterTest(TestCase):
     def setUp(self):
         self.h = heracles
-        self.text = file('./test/data/sources.list').read()
+        self.text = file(DATA_FILE).read()
         self.lens = self.h.lenses['Aptsources']
 
     def tearDown(self):
@@ -598,7 +601,7 @@ class TreeTest(TestCase):
 class ParsedTreeTest(TestCase):
     def setUp(self):
         self.h = heracles
-        self.text = file('./test/data/sources.list').read()
+        self.text = file(DATA_FILE).read()
         self.lens = self.h.lenses['Aptsources']
         self.tree = self.lens.get(self.text)
 

@@ -20,9 +20,10 @@ class new_install(install):
         install.run(self)
 
 setup(name="heracles",
-      version="0.0.2-1",
+      version="0.0.2-2",
       author="Jorge Monforte",
       author_email="jorge.monforte@gmail.com",
       packages=find_packages(exclude=["test"]),
+      test_suite = "heracles.test.test",
       cmdclass={'install':new_install})
       
