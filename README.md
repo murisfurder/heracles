@@ -3,14 +3,23 @@ Heracles
 
 A python lens configuration file parser.
 
-It uses libheracles that is a fork of the augeas project to parse files
-into python objects.
+It uses [libheracles](https://github.com/llou/libheracles) that is a fork of the 
+augeas project to parse files into python objects.
+
+Status
+------
+
+Heracles is now in **alpha**, so you can play with it but it's use in production
+is completely discouraged.
 
 Installing
 ----------
 
 It comes bundled with the libheracles installer so running *sudo 
 python setup.py install* should make the thing work.
+
+I have uploaded it to PIP, so the easiest way to get it working
+is through *sudo pip install heracles*.
 
 How it works
 ------------
