@@ -1,0 +1,40 @@
+#! /bin/bash
+set -x
+TMP=/tmp/
+VERSION=1.0.0
+NAME=libheracles-"$VERSION"
+TMPDIR="$TMP""$NAME"
+FILE="$NAME".tar.gz
+EXIT=0
+
+if [ -n "$1" ]
+then
+    PREFIX=
+else
+    PREFIX=--prefix="$1"
+fi
+
+cp "$FILE" "$TMP"
+pushd "$TMP"
+tar -xvzf "$FILE"
+pushd "$NAME"
+if ! ./configure "$PREFIX" && make && make install;
+then
+    echo "ERROR Unable configure libheracles"
+    EXIT=1
+fi
+if ! make && make install;
+then
+    echo "ERROR Unable compile libheracles"
+    EXIT=1
+fi
+if ! make install;
+then
+    echo "ERROR Unable install libheracles"
+    EXIT=1
+fi
+popd
+rm "$FILE"
+rm -rf "$NAME"
+popd
+exit $EXIT
