@@ -67,8 +67,8 @@ indexed entry of the configuration file:
 <Heracles.TreeNode label:'1' value:'' children:6>
 ```
 
-TreeNodes have three main properties, *label* and *value* are *str*
-and children is a *Tree* or a *ListTree* object. If you look close you will 
+TreeNodes have three main properties, *label* and *value* are strings 
+and *children* can be a *Tree* or a *ListTree* object. If you look close you will 
 see the entry has 6 children, each one is a different TreeNode with its *label*
 , *value* and *children*. 
 
@@ -147,7 +147,7 @@ Now with the updated tree object we can regenerate the file.
 ```
 >>> text = l.put(t, '')
 >>> print text
-deb http://ftp.es.debian.org/debian/ squeeze main contrib
+deb http://ftp.uk.debian.org/debian/ squeeze main contrib
 ...
 ```
 
