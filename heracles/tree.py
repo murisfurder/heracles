@@ -127,18 +127,37 @@ class LabelNodeList(object):
 
     def __repr__(self):
         return "<%s values:%s>" % (self.__class__.__name__,
-                ",".join(map(lambda x:"'%s'" % x.value, self)))
+                ",".join(map(lambda x:"'%s'" % x.v, self)))
 
     def __str__(self):
-        if len >= 1:
-            raise Exc
+        if len > 1:
+            raise HeraclesTreeLabelError('Cannot return the value from a label with multiple values')
+        if len == 0:
+            raise HeraclesTreeLabelError('Cannot return the value from an empty label')
+        return self[0].value
 
 class Tree(object):
     tree_classes = []
     node_classes = []
 
     @classmethod
-    def build_from_raw_tree(cls, first=None, heracles=None, parent=None):
+    def _get_raw_nodes(cls, first):
+        raw_nodes = [first]
+        node_p = first.contents.next
+        while node_p:
+            raw_nodes.append(node_p)
+            sub_raw_nodes = cls._get_raw_nodes(node_p)
+            raw_nodes.extend(sub_raw_nodes)
+            node_p = node_p.contents.next
+        return raw_nodes
+
+    @classmethod
+    def build_from_raw_tree(cls, heracles, first):
+        raw_nodes = cls._get_raw_nodes(first)
+        return cls.build(first=first, heracles=heracles, raw_nodes=raw_nodes)
+
+    @classmethod
+    def build(cls, first=None, heracles=None, parent=None, raw_nodes=[]):
         if first is not None:
             raw_tree_p = first
         elif parent is not None:
@@ -148,8 +167,10 @@ class Tree(object):
         for tc in cls.tree_classes:
             assert(issubclass(tc, cls))
             if tc.check_tree(raw_tree_p):
-                return tc(heracles=heracles, first=first, parent=parent)
-        return cls(heracles=heracles, first=first, parent=parent)
+                return tc(heracles=heracles, first=first, parent=parent, 
+                        raw_nodes=raw_nodes)
+        return cls(heracles=heracles, first=first, parent=parent, 
+                raw_nodes=raw_nodes)
         
     @classmethod
     def check_tree(cls, raw_tree_p):
@@ -162,7 +183,8 @@ class Tree(object):
                 return n_c
         return TreeNode
 
-    def __init__(self, parent=None, first=None, heracles=None):
+    def __init__(self, parent=None, first=None, heracles=None, 
+            raw_nodes=[]):
         assert(isinstance(parent, TreeNode) or parent is None)
         assert(isinstance(first, struct_tree_p) or first is None)
         if parent is not None:
@@ -174,6 +196,7 @@ class Tree(object):
             self.heracles = heracles
         self.parent = parent
         self._items = self._init_children()
+        self._raw_nodes = raw_nodes
 
     def insert(self, index, node):
         assert(isinstance(node, TreeNode))
@@ -319,10 +342,14 @@ class Tree(object):
         self.remove(item)
 
     def __repr__(self):
-        return "%s [%s]>" % (self.__class__.__name__,",".join(map(str, self._items)))
+        return "<%s [%s]>" % (self.__class__.__name__,",".join(map(str, self._items)))
 
     def __len__(self):
         return len(self._items)
+
+    def __del__(self):
+        for raw_node in self._raw_nodes:
+            libheracles.free_tree_node(raw_node)
 
 class ListTree(Tree):
     @classmethod
@@ -463,11 +490,14 @@ class TreeNode(object):
             self.label = label
         if value is not None:
             self.value = value
-        self.children = Tree(parent=self)
         if parent != 0:
             self.parent = parent
         if next != 0:
             self.next = next
+
+    @property
+    def children(self):
+        return Tree.build(parent=self)
 
     @property
     def previous(self):
@@ -546,8 +576,5 @@ class TreeNode(object):
         return "<Heracles.TreeNode label:'%s' value:'%s' children:%d>" % (str(self.label),
                 str(self.value), len(self.children))
 
-    def __del__(self):
-        if not self._self_contained:
-            libheracles.free_tree_node(self.pointer)
 
 
