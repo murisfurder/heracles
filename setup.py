@@ -20,7 +20,7 @@ class new_install(install):
         install.run(self)
 
 setup(name="heracles",
-      version="0.0.2-2",
+      version="0.0.3",
       author="Jorge Monforte",
       author_email="jorge.monforte@gmail.com",
       packages=find_packages(exclude=["test"]),
