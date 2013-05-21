@@ -41,6 +41,7 @@ lens parser you have two ways of doing it:
 
         `>>> l = h.get_lens_by_path('/etc/apt/sources.list')`
 
+
 Now with the lens parser loaded you can start parsing:
 
 ```
@@ -51,9 +52,14 @@ deb http://ftp.es.debian.org/debian/ squeeze main contrib non-free
 >>> t = l.get(text)
 ```
 
-You get a tree object, that you can modify the values using 
-standar python methods. Tree objects behave in some ways like *list*.
-For example lets get the first entry of the configuration file:
+You get a *ListTree* object, that you can modify the values using 
+standar python methods. ListTree objects behave in some ways like *list*
+of *TreeNode* objects. 
+
+A *ListTree* is returned when heracles detects some *TreeNode*s labels
+are correlative numbers starting at 1. This allows straight access to 
+indexed nodes using standar python syntax. For example lets get the first 
+indexed entry of the configuration file:
 
 ```
 >>> e = t[0]
@@ -61,12 +67,27 @@ For example lets get the first entry of the configuration file:
 <Heracles.TreeNode label:'1' value:'' children:6>
 ```
 
-If you look close you will see the entry has 6 children, children
-are tree nodes stored in a Tree object. *Tree* objects behave also like 
-*dicts*.
+TreeNodes have three main properties, *label* and *value* are *str*
+and children is a *Tree* or a *ListTree* object. If you look close you will 
+see the entry has 6 children, each one is a different TreeNode with its *label*
+, *value* and *children*. 
 
 ```
 >>> c = e.children
+>>> for n in c: print n
+<Heracles.TreeNode label:'type' value:'deb' children:0>
+<Heracles.TreeNode label:'uri' value:'http://ftp.es.debian.org/debian/' children:0>
+<Heracles.TreeNode label:'distribution' value:'squeeze' children:0>
+<Heracles.TreeNode label:'component' value:'main' children:0>
+<Heracles.TreeNode label:'component' value:'contrib' children:0>
+<Heracles.TreeNode label:'component' value:'non-free' children:0>
+```
+
+In this case *e.children* is *Tree* objects instead of a *ListTree*.
+*Tree* objects behave someways like *dicts*, you can access TreeNodes by their
+label.
+
+```
 >>> print c['type'].value
 'deb'
 ```
@@ -82,12 +103,20 @@ all nodes with this label.
 <Heracles.TreeNode label:'component' value:'non-free' children:0>
 ```
 
-You can also access by index.
+To select which node you use it's index:
 
 ```
 >>> n = c['component'][2]
 >>> print n.value
 'non-free'
+```
+
+*Tree* objects also allow straight access through the index of the node.
+So if you want to get the first children:
+
+```
+>>> print c[0]
+<Heracles.TreeNode label:'type' value:'deb' children:0>
 ```
 
 You can modify the tree using standar methods.
@@ -97,6 +126,20 @@ You can modify the tree using standar methods.
 >>> for i in c['component']: print i
 <Heracles.TreeNode label:'component' value:'main' children:0>
 <Heracles.TreeNode label:'component' value:'contrib' children:0>
+```
+
+If you want to set values through it's label you have to remember
+to set the index of list of nodes with that label:
+
+```
+>>> c['uri'][0] = 'http://ftp.uk.debian.org/debian/'
+>>> for n in c: print n
+<Heracles.TreeNode label:'type' value:'deb' children:0>
+<Heracles.TreeNode label:'uri' value:'http://ftp.uk.debian.org/debian/' children:0>
+<Heracles.TreeNode label:'distribution' value:'squeeze' children:0>
+<Heracles.TreeNode label:'component' value:'main' children:0>
+<Heracles.TreeNode label:'component' value:'contrib' children:0>
+<Heracles.TreeNode label:'component' value:'non-free' children:0>
 ```
 
 Now with the updated tree object we can regenerate the file.
