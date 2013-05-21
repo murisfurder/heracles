@@ -56,10 +56,10 @@ You get a *ListTree* object, that you can modify the values using
 standar python methods. ListTree objects behave in some ways like *list*
 of *TreeNode* objects. 
 
-A *ListTree* is returned when heracles detects some *TreeNode*s labels
+A *ListTree* is returned when heracles detects some *TreeNode* labels
 are correlative numbers starting at 1. This allows straight access to 
-indexed nodes using standar python syntax. For example lets get the first 
-indexed entry of the configuration file:
+**indexed** nodes using standar python syntax. For example lets get the first 
+**indexed** entry of the configuration file:
 
 ```
 >>> e = t[0]
