@@ -24,7 +24,7 @@ is through *sudo pip install heracles*.
 How it works
 ------------
 
-First of all you have to instantite an *Heracles* object
+First of all you have to instantiate an *Heracles* object
 ```
 >>> from heracles import Heracles
 >>> h = Heracles()
