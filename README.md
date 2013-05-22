@@ -139,7 +139,6 @@ to set the index of list of nodes with that label:
 <Heracles.TreeNode label:'distribution' value:'squeeze' children:0>
 <Heracles.TreeNode label:'component' value:'main' children:0>
 <Heracles.TreeNode label:'component' value:'contrib' children:0>
-<Heracles.TreeNode label:'component' value:'non-free' children:0>
 ```
 
 Now with the updated tree object we can regenerate the file.
