@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import ctypes as c
 from fnmatch import fnmatch
 from heracles.structs import struct_heracles, struct_tree, struct_lns_error
@@ -79,13 +80,17 @@ class Lens(object):
         if err:
             raise Exception(err.contents.message)
 
+    @contextmanager
     def get(self, text):
         hera_get = libheracles.hera_get
         hera_get.restype = c.POINTER(struct_tree)
         error = c.POINTER(struct_lns_error)()
         tree_p = hera_get(self.lens, c.c_char_p(text), error)
         self._catch_error(error)
-        return Tree.build_from_raw_tree(heracles=self.heracles, first=tree_p)
+        tree = Tree.build_from_raw_tree(heracles=self.heracles, first=tree_p)
+        yield tree
+        tree.delete()
+
 
     def put(self, tree, text):
         tree = tree[0].pointer

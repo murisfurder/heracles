@@ -144,10 +144,11 @@ class Tree(object):
     def _get_raw_nodes(cls, first):
         raw_nodes = [first]
         node_p = first.contents.next
-        while node_p:
+        while bool(node_p):
             raw_nodes.append(node_p)
-            sub_raw_nodes = cls._get_raw_nodes(node_p)
-            raw_nodes.extend(sub_raw_nodes)
+            if node_p.contents.children:
+                sub_raw_nodes = cls._get_raw_nodes(node_p.contents.children)
+                raw_nodes.extend(sub_raw_nodes)
             node_p = node_p.contents.next
         return raw_nodes
 
@@ -347,9 +348,11 @@ class Tree(object):
     def __len__(self):
         return len(self._items)
 
-    def __del__(self):
-        for raw_node in self._raw_nodes:
-            libheracles.free_tree_node(raw_node)
+    def delete(self):
+        print "EOOO"
+        if hasattr(self, "_raw_nodes"):
+            for raw_node in self._raw_nodes:
+                libheracles.free_tree_node(raw_node)
 
 class ListTree(Tree):
     @classmethod
