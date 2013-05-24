@@ -1,10 +1,14 @@
 from contextlib import contextmanager
 import ctypes as c
 from fnmatch import fnmatch
-from heracles.structs import struct_heracles, struct_tree, struct_lns_error
+from heracles.structs import struct_heracles, struct_tree, struct_tree_p, struct_lns_error
 from heracles.exceptions import get_exception
 from heracles.libs import libheracles
 from heracles.tree import Tree
+
+def free_raw_tree(raw_tree):
+    assert(isinstance(raw_tree, struct_tree_p))
+    libheracles.free_tree_node(raw_tree)
 
 class HeraclesLenses(object):
     def __get__(self, obj, obj_type=None):

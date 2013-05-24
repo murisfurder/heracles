@@ -1,4 +1,5 @@
-from heracles.exceptions import HeraclesTreeError, HeraclesTreeLabelError, HeraclesTreeNodeError, HeraclesListTreeError
+from heracles.structs import struct_tree_p
+from heracles.exceptions import HeraclesTreeLabelError, HeraclesListTreeError
 from heracles.util import check_int
 
 class RawTree(object):
@@ -132,25 +133,48 @@ class LabelNodeList(object):
             raise HeraclesTreeLabelError('Cannot return the value from an empty label')
         return self[0].value
 
+def get_nodes_from_raw_tree(heracles, first_p, parent=None):
+    assert(isinstance(first_p, struct_tree_p))
+    result = []
+    raw_node_p = first_p
+    while raw_node_p:
+        raw_node = raw_node_p.contents
+        if raw_node.children:
+            children = get_nodes_from_raw_tree(heracles, raw_node.children)
+        else:
+            children = []
+        label = raw_node.label.value
+        value = raw_node.value.value
+        node = TreeNode(heracles, label=label, value=value, parent=parent, 
+                children=children)
+        result.append(node)
+        raw_node_p = raw_node.next
+    return result
+
 class Tree(object):
     tree_classes = []
     node_class = None
 
     @classmethod
+    def build_from_raw_tree_pointer(cls, heracles, first):
+        nodes = get_nodes_from_raw_tree(first)
+        return cls.build(heracles, nodes=nodes)
+
+    @classmethod
+    def build_from_parent(cls, parent):
+        cls.build(parent.heracles, parent=parent, nodes=parent.nodes)
+
+    @classmethod
     def build(cls, heracles, parent=None, nodes=[]):
-        if first is not None:
-            raw_tree_p = first
-        elif parent is not None:
-            raw_tree_p = parent.htree.children
-        else:
-            raise HeraclesTreeError('Must provide first node or parent to build tree')
         for tc in cls.tree_classes:
             assert(issubclass(tc, cls))
-            if tc.check_tree(raw_tree_p):
-                return tc(heracles=heracles, first=first, parent=parent, 
-                        raw_nodes=raw_nodes)
-        return cls(heracles=heracles, first=first, parent=parent, 
-                raw_nodes=raw_nodes)
+            if tc.check_tree(nodes):
+                return tc(heracles, parent=parent, nodes=nodes)
+        return cls(heracles=heracles, parent=parent, nodes=nodes)
+
+    @classmethod
+    def check_tree(cls, nodes):
+        return True
         
     def __init__(self, heracles, parent=None, nodes=[]):
         assert(isinstance(parent, TreeNode) or parent is None)

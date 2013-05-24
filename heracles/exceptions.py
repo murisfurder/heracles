@@ -63,3 +63,9 @@ class HeraclesTreeError(HeraclesError):
 class HeraclesTreeLabelError(HeraclesTreeError):
     pass
 
+class HeraclesListTreeError(HeraclesTreeError):
+    pass
+
+class HeraclesTreeNodeError(HeraclesError):
+    pass
+
