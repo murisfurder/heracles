@@ -1,10 +1,15 @@
+import os
 import ctypes as c
 from fnmatch import fnmatch
-from heracles.structs import struct_heracles, struct_tree, struct_tree_p, struct_lns_error
+from heracles.structs import struct_heracles, struct_tree, struct_lns_error
 from heracles.exceptions import get_exception
 from heracles.libs import libheracles
 from heracles.raw import UnmanagedRawTree, ManagedRawTree
 from heracles.tree import Tree
+from heracles.util import get_heracles_path
+
+LENS_PATH = "lenses"
+PATH_SEP = ":"
 
 class HeraclesLenses(object):
     def __get__(self, obj, obj_type=None):
@@ -31,11 +36,25 @@ class HeraclesLenses(object):
 class Heracles(object):
     lenses = HeraclesLenses()
 
+    def get_load_path(self, loadpath):
+        if loadpath is None:
+            loadpath = []
+        base_lens_path = [os.path.join(get_heracles_path(), LENS_PATH)]
+        return PATH_SEP.join(base_lens_path + loadpath)
+
     def __init__(self, loadpath=None, flags=0):
-        if not isinstance(loadpath, basestring) and loadpath != None:
+        if isinstance(loadpath, list):
+            for path in loadpath:
+                if not isinstance(path, str):
+                    raise TypeError("loadpath items must be string")
+        elif loadpath == None:
+            pass
+        else:
             raise TypeError("loadpath MUST be a string or None!")
         if not isinstance(flags, int):
             raise TypeError("flag MUST be a flag!")
+
+        loadpath = self.get_load_path(loadpath)
 
         hera_init = libheracles.hera_init
         hera_init.restype = c.POINTER(struct_heracles)

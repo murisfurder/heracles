@@ -1,37 +1,37 @@
 #! /bin/bash
+set -x
+if [ -n "$1"]; then echo Must provide destination; exit 1; fi 
+
 TMP=/tmp/
 VERSION=1.0.0
 NAME=libheracles-"$VERSION"
 TMPDIR="$TMP""$NAME"
 FILE="$NAME".tar.gz
 EXIT=0
-
-if [ -n "$1" ]
-then
-    PREFIX=
-else
-    PREFIX=--prefix="$1"
-fi
+LIB_FILE="src/.libs/libheracles.so"
+SRCDIR="$(pwd)"
+DEST_DIR="$SRCDIR"/"$1"
+LIB_DIR="$DEST_DIR"/libs
+LENS_DIR="$DEST_DIR"/lenses
 
 cp "$FILE" "$TMP"
 pushd "$TMP"
 tar -xvzf "$FILE"
 pushd "$NAME"
-if ! ./configure "$PREFIX" && make && make install;
+if ! ./configure;
 then
     echo "ERROR Unable configure libheracles"
     EXIT=1
 fi
-if ! make && make install;
+if ! make;
 then
     echo "ERROR Unable compile libheracles"
     EXIT=1
 fi
-if ! make install;
-then
-    echo "ERROR Unable install libheracles"
-    EXIT=1
-fi
+mkdir -p "$LIB_DIR"
+mkdir -p "$LENS_DIR"
+cp "$TMPDIR"/"$LIB_FILE" "$LIB_DIR" 
+cp "$TMPDIR"/lenses/* "$LENS_DIR"/
 popd
 rm "$FILE"
 rm -rf "$NAME"

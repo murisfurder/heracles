@@ -3,5 +3,7 @@ libheracles*/
 *.sw*
 build/
 dist/
+heracles/libs/
+heracles/lenses/
 *.egg-info
 

@@ -1,23 +1,57 @@
+import os
 from os import chmod
+from shutil import copyfile
 from stat import S_IRWXU
 from setuptools import setup, find_packages
-from setuptools.command.install import install
+from distutils.cmd import Command
 from distutils.errors import CompileError
+from distutils.command.build import build
 from subprocess import call
 
+LIBDIR = "lib"
+#ORIGIN_FILE = 
 
-class new_install(install):
+class build_libheracles(Command):
+    user_options = [
+            ('inplace', 'i',
+             'ignore build-lib and put compiler extensions into the source' +
+             'directory alongsie your pure python modules'),
+            ('build-lib=', 'b',
+             "directory for compiled extension modules"),
+            ]
+    boolean_options = ['inplace']
+
+    def initialize_options(self):
+        self.inplace = 0
+        self.build_lib = None
+        self.plat_name = None
+
+    def finalize_options(self):
+        self.set_undefined_options('build', 
+                ('build_lib', 'build_lib'),
+                ('plat_name', 'plat_name'))
 
     def run(self):
-        install.run(self)
-        # set executable to install-libheracles
-        chmod('install_libheracles', S_IRWXU)
+        self.compile()
 
-        options = [self.root] if self.root is not None else []
-        v =  call(['./install_libheracles'] + options)
+    def compile(self):
+        # set executable to install-libheracles
+        chmod('build_libheracles', S_IRWXU)
+        dest_dir = self.get_dest_dir()
+
+        v =  call(['./build_libheracles', dest_dir] )
         if v != 0:
-            raise CompileError("Unable to compile and install libheracles")
-        install.run(self)
+            raise CompileError("Unable to compile libheracles")
+
+    def get_dest_dir(self):
+        if self.inplace:
+            dest_dir = os.path.join('heracles')
+        else:
+            dest_dir = os.path.join(self.build_lib, 'heracles')
+        return dest_dir
+
+class new_build(build):
+    sub_commands = build.sub_commands + [('build_libheracles', lambda x:True)]
 
 setup(name="heracles",
       version="0.0.3",
@@ -25,5 +59,5 @@ setup(name="heracles",
       author_email="jorge.monforte@gmail.com",
       packages=find_packages(exclude=["test"]),
       test_suite = "heracles.test.test",
-      cmdclass={'install':new_install})
+      cmdclass={'build':new_build, "build_libheracles":build_libheracles})
       
