@@ -1,13 +1,14 @@
 from os.path import dirname, realpath, join
 import ctypes as c
 from unittest import TestCase
-from heracles import Heracles, TreeNode, Tree, ListTree
+from heracles import Heracles, Tree, ListTree, TreeNode, ListTreeNode
+from heracles.raw import ManagedRawTree 
+from heracles.tree import check_list_nodes
 
 CURRENT_DIR = dirname(realpath(__file__))
 DATA_FILE = join(CURRENT_DIR, "data/sources.list")
 
 heracles = Heracles()
-
 def check_equal_addresses(p1, p2):
     return c.addressof(p1) == c.addressof(p2)
 
@@ -25,14 +26,9 @@ def check_serialized_equal(test, data, tree):
 
 class HeraclesTest(TestCase):
     def setUp(self):
-        self.h = heracles
         self.text = file(DATA_FILE).read()
-        self.lens = self.h.lenses['Aptsources']
+        self.lens = heracles.lenses['Aptsources']
         self.tree = self.lens.get(self.text)
-
-    def tearDown(self):
-        del self.h
-        del self.tree
 
     def test_list(self):
         self.assertTrue(isinstance(self.tree, ListTree))
@@ -42,585 +38,312 @@ class HeraclesTest(TestCase):
         ntree = self.lens.get(gtext)
         check_equal_tree(self, self.tree, ntree)
 
-    def xtest_delete_row(self):
-        self.tree.remove(self.tree['1'])
+    def test_delete_row(self):
+        self.tree.remove(self.tree["1"][0])
         text = self.lens.put(self.tree, "")
         ntree = self.lens.get(text)
         check_equal_tree(self, self.tree, ntree)
 
 class FilterTest(TestCase):
     def setUp(self):
-        self.h = heracles
         self.text = file(DATA_FILE).read()
-        self.lens = self.h.lenses['Aptsources']
-
-    def tearDown(self):
-        del self.h
+        self.lens = heracles.lenses['Aptsources']
 
     def test_filter(self):
         self.assertTrue(self.lens.check_path("/etc/apt/sources.list"))
         self.assertFalse(self.lens.check_path("/etc/sources.list"))
 
     def test_get_lens(self):
-        l = self.h.get_lens_by_path("/etc/apt/sources.list")
+        l = heracles.get_lens_by_path("/etc/apt/sources.list")
         self.assertEqual(l.name, "Aptsources")
-        l = self.h.get_lens_by_path("/etc/sudoers")
+        l = heracles.get_lens_by_path("/etc/sudoers")
         self.assertEqual(l.name, "Sudoers")
-        l = self.h.get_lens_by_path("/etc/xudoers")
+        l = heracles.get_lens_by_path("/etc/xudoers")
         self.assertTrue(l is None)
 
 class TreeBuildTest(TestCase):
-    def setUp(self):
-        self.h = heracles
-
-    def tearDown(self):
-        del self.h
-
     def test_build_list_tree(self):
-        t = self.h.new_tree()
+        t = heracles.new_tree()
         t['1'] = "a"
         t['2'] = "b"
         t['3'] = "c"
-        self.assertTrue(ListTree.check_tree(t.first))
-        nt = Tree.build_from_raw_tree(heracles=self.h, first=t.first)
+        self.assertTrue(check_list_nodes(t._nodes))
+        rt = ManagedRawTree.build_from_tree(t)
+        nt = rt.build_tree()
         self.assertTrue(isinstance(nt, ListTree))
 
     def test_build_list_tree_2(self):
-        t = self.h.new_tree()
+        t = heracles.new_tree()
         t['3'] = "a"
         t['2'] = "b"
         t['1'] = "c"
-        self.assertFalse(ListTree.check_tree(t.first))
-        nt = Tree.build_from_raw_tree(heracles=self.h, first=t.first)
+        self.assertFalse(check_list_nodes(t._nodes))
+        rt = ManagedRawTree.build_from_tree(t)
+        nt = rt.build_tree()
         self.assertFalse(isinstance(nt, ListTree))
 
     def test_build_list_tree_3(self):
-        t = self.h.new_tree()
+        t = heracles.new_tree()
         t['1'] = "c"
         t['1'] = "x"
         t['2'] = "b"
         t['3'] = "a"
-        self.assertFalse(ListTree.check_tree(t.first))
-        nt = Tree.build_from_raw_tree(heracles=self.h, first=t.first)
+        self.assertFalse(check_list_nodes(t._nodes))
+        rt = ManagedRawTree.build_from_tree(t)
+        nt = rt.build_tree()
         self.assertFalse(isinstance(nt, ListTree))
-
-class ListTreeTest(TestCase):
-    def setUp(self):
-        self.h = heracles
-        t = self.h.new_tree()
-        t['1'] = "a"
-        t['2'] = "b"
-        t['#comment'] = "Tio"
-        t['3'] = "c"
-        self.t = Tree.build_from_raw_tree(heracles=self.h, first=t.first)
-
-    def tearDown(self):
-        del self.h
-        del self.t
-
-    def check_tree(self, node):
-        self.assertEqual(node.parent, self.t.parent)
-        self.assertEqual(node.tree, self.t)
-
-    def check_node_first(self, node):
-        self.check_tree(node)
-        self.assertTrue(check_equal_addresses(self.t.first.contents, node.htree))
-
-    def check_node_next(self, n1, n2):
-        self.check_tree(n1)
-        self.check_tree(n2)
-        self.assertEqual(n1.next, n2)
-        self.assertTrue(check_equal_addresses(n1.htree.next.contents, n2.htree))
-
-    def check_index_correspondence(self):
-        for i, item in enumerate(self.t):
-            self.assertEqual(i+1, int(item.label))
-
-    def test_list_tree(self):
-        self.assertEqual(self.t[0].value, "a")
-        self.assertEqual(self.t[1].value, "b")
-        self.assertEqual(self.t[2].value, "c")
-        self.t[0] = "x"
-        self.assertEqual(self.t[0].value, "x")
-
-    def test_insert_first(self):
-        n = TreeNode(heracles=self.h,  value="x")
-        self.t.insert(0, n)
-        self.check_node_first(self.t[0])
-        self.check_node_next(self.t[0], self.t[1])
-        self.assertEqual(self.t[0].label, "1")
-        self.check_index_correspondence()
-
-    def test_insert_middle(self):
-        n = TreeNode(heracles=self.h,  value="x")
-        self.t.insert(1, n)
-        self.check_node_next(self.t[0], self.t[1])
-        self.check_node_next(self.t[1], self.t[2])
-        self.assertEqual(self.t[1].label, "2")
-        self.check_index_correspondence()
-
-    def test_insert_last(self):
-        n = TreeNode(heracles=self.h,  value="x")
-        self.t.insert(2, n)
-        self.assertEqual(self.t[2].label, "3")
-        self.check_index_correspondence()
-
-    def test_append(self):
-        n = TreeNode(heracles=self.h,  value="x")
-        last = self.t._items[-1]
-        self.t.append(n)
-        self.assertEqual(self.t[3].label, "4")
-        self.assertEqual(self.t[-1], n)
-        self.check_node_next(last, n)
-        self.check_index_correspondence()
-
-    def test_insert_first_str(self):
-        self.t.insert(0, "x")
-        self.check_node_first(self.t[0])
-        self.check_node_next(self.t[0], self.t[1])
-        self.assertEqual(self.t[0].label, "1")
-        self.check_index_correspondence()
-
-    def test_insert_middle_str(self):
-        self.t.insert(1, "x")
-        self.check_node_next(self.t[0], self.t[1])
-        self.check_node_next(self.t[1], self.t[2])
-        self.assertEqual(self.t[1].label, "2")
-        self.check_index_correspondence()
-
-    def test_insert_last_str(self):
-        self.t.insert(2, "x")
-        self.assertEqual(self.t[2].label, "3")
-        self.check_index_correspondence()
-
-    def test_append_str(self):
-        last = self.t._items[-1]
-        self.t.append("x")
-        self.assertEqual(self.t[3].label, "4")
-        self.assertEqual(self.t[-1].value, "x")
-        self.assertEqual(last.next.value, "x")
-        self.check_index_correspondence()
-
-    def test_remove_first(self):
-        first = self.t._items[1]
-        node = self.t[0]
-        self.t.remove(node)
-        self.check_node_first(first)
-        self.check_node_next(node, first)
-        self.check_index_correspondence()
-
-    def test_remove_middle(self):
-        node = self.t[1]
-        previous = node.previous
-        next = node.next
-        self.t.remove(node)
-        self.check_node_next(previous, next)
-        self.check_index_correspondence()
-
-    def test_remove_last(self):
-        last = self.t[-1]
-        previous = last.previous
-        self.t.remove(last)
-        self.assertTrue(previous.next == None)
-
-class TreeNodeLabelTest(TestCase):
-    def setUp(self):
-        self.h = heracles
-        t = self.h.new_tree()
-        t['a'] = "a"
-        t['#comment'] = "comment"
-        t['b'] = "b1"
-        t['#comment'] = "comment"
-        t['b'] = "b2"
-        t['c'] = "c1"
-        t['#comment'] = "comment"
-        t['b'] = "b3"
-        t['#comment'] = "comment"
-        t['c'] = "c2"
-        self.t = Tree.build_from_raw_tree(heracles=self.h, first=t.first)
-
-    def tearDown(self):
-        del self.h
-        del self.t
-
-    def test_label(self):
-        self.assertEqual(self.t['a'].value , "a")
-        self.assertEqual(len(self.t['b']) , 3)
-        self.assertEqual(self.t['b'][0].value , "b1")
-        self.assertEqual(self.t['b'][1].value , "b2")
-        self.assertEqual(self.t['b'][2].value , "b3")
-        self.assertEqual(self.t['b'][-1].value , "b3")
-        self.assertEqual(self.t['b'][-2].value , "b2")
-        self.assertEqual(self.t['b'][-3].value , "b1")
-        self.assertEqual(len(self.t['c']) , 2)
-
-    def test_insert_first(self):
-        bs = self.t['b']
-        bs.insert(0, "b0")
-        self.assertEqual(bs[0].value, "b0")
-
-    def test_insert_first2(self):
-        n = TreeNode(heracles=self.h,  value="b0")
-        bs = self.t['b']
-        bs.insert(0, n)
-        self.assertEqual(bs[0].value, "b0")
-
-    def test_insert_middle(self):
-        bs = self.t['b']
-        bs.insert(1, "b0")
-        self.assertEqual(bs[1].value, "b0")
-
-    def test_insert_middle2(self):
-        n = TreeNode(heracles=self.h,  value="b0")
-        bs = self.t['b']
-        bs.insert(1, n)
-        self.assertEqual(bs[1].value, "b0")
-
-    def test_append(self):
-        bs = self.t['b']
-        bs.append("b0")
-        self.assertEqual(bs[3].value, "b0")
-
-    def test_append_str(self):
-        n = TreeNode(heracles=self.h,  value="b0")
-        bs = self.t['b']
-        bs.append(n)
-        self.assertEqual(bs[3].value, "b0")
 
 class TreeTest(TestCase):
     def setUp(self):
-        self.h = heracles
-        self.t = self.h.new_tree()
+        self.t = Tree()
+        self.t['a'] = 'a1'
+        self.t['b'] = 'b1'
+        self.t['c'] = 'c1'
+        self.t['d'] = 'd1'
+        self.t['d'] = 'd2'
+        t2 = self.t['a'][0].children
+        t2['a11'] = 'a11'
+        t2['a12'] = 'a12'
+        t2['a13'] = 'a13'
+        t2['a14'] = 'a141'
+        t2['a14'] = 'a142'
 
     def tearDown(self):
-        del self.h
         del self.t
 
-    def load_tree(self):
-        self.t['test1'] = "1" 
-        p = self.t[0]
-        self.t['test2'] = "2"
-        self.t['test3'] = "3"
-        p.children['test1.1'] = "1"
-        p.children['test1.2'] = "2"
-        p.children['test1.3'] = "3"
+    def test_repr(self):
+        self.assertTrue(len(str(self.t)) > 0)
 
-    def test_new_tree(self):
-        self.assertTrue(len(self.t)==0)
+    def test_tree(self):
+        self.assertEqual(self.t['a'].value, 'a1')
+        self.assertEqual(self.t['b'].value, 'b1')
+        self.assertEqual(self.t['c'].value, 'c1')
+        self.assertEqual(self.t['d'][0].value, 'd1')
+        self.assertEqual(self.t['d'][1].value, 'd2')
+        self.assertTrue('a' in self.t)
+        self.assertTrue('b' in self.t)
+        self.assertTrue('c' in self.t)
+        self.assertTrue('d' in self.t)
+        t2 = self.t['a'].children
+        self.assertEqual(t2['a11'].value, 'a11')
+        self.assertEqual(t2['a11'].parent, self.t['a'][0])
+        self.assertEqual(t2['a12'].value, 'a12')
+        self.assertEqual(t2['a12'].parent, self.t['a'][0])
+        self.assertEqual(t2['a13'].value, 'a13')
+        self.assertEqual(t2['a13'].parent, self.t['a'][0])
+        self.assertEqual(t2['a14'][0].value, 'a141')
+        self.assertEqual(t2['a14'][0].parent, self.t['a'][0])
+        self.assertEqual(t2['a14'][1].value, 'a142')
+        self.assertEqual(t2['a14'][1].parent, self.t['a'][0])
+        self.assertTrue('a11' in t2)
+        self.assertTrue('a12' in t2)
+        self.assertTrue('a13' in t2)
+        self.assertTrue('a14' in t2)
 
-    def test_children(self):
-        self.assertTrue(len(self.t) == 0)
-        self.t['test'] = "1" 
-        self.assertTrue(len(self.t) == 1)
-        self.assertTrue(self.t['test'].value == "1")
-        self.assertTrue(self.t[0].value == "1")
-        n = self.t['test'] 
-        n.value = "2"
-        self.assertTrue(len(self.t) == 1)
-        self.assertTrue(self.t['test'].value == "2")
-        self.assertTrue(self.t[0].value == "2")
-        self.t['test2'] = "3"
-        self.assertTrue(len(self.t) == 2)
-        self.assertTrue(self.t['test2'].value == "3")
-        self.assertTrue(self.t[1].value == "3")
-        t = self.t[0].children
-        t['test'] = "1" 
-        self.assertTrue(len(t) == 1)
-        self.assertTrue(t['test'].value == "1")
-        self.assertTrue(t[0].value == "1")
-        n = t['test'] 
-        n.value = "2"
-        self.assertTrue(len(t) == 1)
-        self.assertTrue(t['test'].value == "2")
-        self.assertTrue(t[0].value == "2")
-        t['test2'] = "3"
-        self.assertTrue(len(t) == 2)
-        self.assertTrue(t['test2'].value == "3")
-        self.assertTrue(t[1].value == "3")
+    def test_insert_1(self):
+        node = TreeNode(label="x", value="x1")
+        self.t.insert(0, node)
+        self.assertTrue('x' in self.t)
+        self.assertEqual(self.t.index(node), 0)
 
-    def test_insert_new_middle(self):
-        self.load_tree()
-        self.t.insert_new(1, label="test_insert", value="0")
-        self.assertTrue(self.t["test_insert"].value == "0")
-        self.assertTrue(self.t[1].value == "0")
-        self.assertTrue(self.t[0].next == self.t[1])
-        self.assertTrue(self.t[1].next == self.t[2])
-        self.assertTrue(len(self.t) == 4)
-        t = self.t[0].children
-        t.insert_new(1, label="test_insert", value="0")
-        self.assertTrue(t["test_insert"].value == "0")
-        self.assertTrue(t[1].value == "0")
-        self.assertTrue(t[0].next == t[1])
-        self.assertTrue(check_equal_addresses(t[0].htree.next.contents,
-            t[1].htree))
-        self.assertTrue(t[1].next == t[2])
-        self.assertTrue(check_equal_addresses(t[1].htree.next.contents,
-            t[2].htree))
-        self.assertTrue(len(t) == 4)
+    def test_insert_2(self):
+        node = TreeNode(label="x", value="x1")
+        self.t['a'].children.insert(0, node)
+        self.assertTrue('x' in self.t['a'].children)
+        self.assertEqual(self.t['a'].children.index(node), 0)
 
-    def test_insert_new_first(self):
-        self.load_tree()
-        self.t.insert_new(0, label="test_insert", value="0")
-        self.assertTrue(self.t["test_insert"].value == "0")
-        self.assertTrue(self.t[0].value == "0")
-        self.assertTrue(len(self.t) == 4)
-        self.assertTrue(self.t[0].next == self.t[1])
-        self.assertTrue(check_equal_addresses(self.t[0].htree.next.contents,
-            self.t[1].htree))
-        self.assertTrue(check_equal_addresses(self.t.first.contents, 
-                self.t[0].htree))
-        t = self.t[1].children
-        t.insert_new(0, label="test_insert", value="0")
-        self.assertTrue(t["test_insert"].value == "0")
-        self.assertTrue(t[0].value == "0")
-        self.assertTrue(len(t) == 4)
-        self.assertTrue(t[0].next == t[1])
-        self.assertTrue(check_equal_addresses(t[0].htree.next.contents,
-            t[1].htree))
-        self.assertTrue(check_equal_addresses(t.first.contents, 
-                t[0].htree))
-    def test_insert_new_last(self):
-        self.load_tree()
-        self.t.insert_new(3, label="test_insert", value="0")
-        self.assertTrue(self.t["test_insert"].value == "0")
-        self.assertTrue(self.t[3].value == "0")
-        self.assertTrue(len(self.t) == 4)
-        self.assertTrue(self.t[2].next == self.t[3])
-        self.assertTrue(check_equal_addresses(self.t[2].htree.next.contents,
-            self.t[3].htree))
-        t = self.t[0].children
-        t.insert_new(3, label="test_insert", value="0")
-        self.assertTrue(t["test_insert"].value == "0")
-        self.assertTrue(t[3].value == "0")
-        self.assertTrue(len(t) == 4)
-        self.assertTrue(t[2].next == t[3])
-        self.assertTrue(check_equal_addresses(t[2].htree.next.contents,
-            t[3].htree))
-
-    def test_append_new(self):
-        self.load_tree()
-        self.t.append_new(label="test_insert", value="0")
-        self.assertTrue(self.t["test_insert"].value == "0")
-        self.assertTrue(self.t[3].value == "0")
-        self.assertTrue(len(self.t) == 4)
-        self.assertTrue(self.t[2].next == self.t[3])
-        self.assertTrue(check_equal_addresses(self.t[2].htree.next.contents,
-            self.t[3].htree))
-        t = self.t[0].children
-        t.append_new(label="test_insert", value="0")
-        self.assertTrue(t["test_insert"].value == "0")
-        self.assertTrue(t[3].value == "0")
-        self.assertTrue(len(t) == 4)
-        self.assertTrue(t[2].next == t[3])
-        self.assertTrue(check_equal_addresses(t[2].htree.next.contents,
-            t[3].htree))
-
-    def test_insert_middle(self):
-        self.load_tree()
-        t = TreeNode(heracles=self.h, label="test_insert", value="0")
-        self.t.insert(1, t)
-        self.assertTrue(self.t["test_insert"].value == "0")
-        self.assertTrue(self.t[1].value == "0")
-        self.assertTrue(self.t[0].next == self.t[1])
-        self.assertTrue(check_equal_addresses(self.t[0].htree.next.contents,
-            self.t[1].htree))
-        self.assertTrue(self.t[1].next == self.t[2])
-        self.assertTrue(check_equal_addresses(self.t[1].htree.next.contents,
-            self.t[2].htree))
-        self.assertTrue(len(self.t) == 4)
-
-    def test_insert_middle_2(self):
-        self.load_tree()
-        n0 = self.t[0]
-        t = n0.children
-        n = TreeNode(heracles=self.h, label="test_insert", value="0")
-        t.insert(1, n)
-        self.assertTrue(t["test_insert"].value == "0")
-        self.assertTrue(t[1].value == "0")
-        self.assertTrue(t[0].next == t[1])
-        self.assertTrue(check_equal_addresses(t[0].htree.next.contents,
-            t[1].htree))
-        self.assertTrue(t[1].next == t[2])
-        self.assertTrue(check_equal_addresses(t[1].htree.next.contents,
-            t[2].htree))
-        self.assertTrue(len(t) == 4)
-
-    def test_insert_first(self):
-        self.load_tree()
-        t = TreeNode(heracles=self.h, label="test_insert", value="0")
-        self.t.insert(0, t)
-        self.assertTrue(self.t["test_insert"].value == "0")
-        self.assertTrue(self.t[0].value == "0")
-        self.assertTrue(len(self.t) == 4)
-        self.assertTrue(self.t[0].next == self.t[1])
-        self.assertTrue(check_equal_addresses(self.t[0].htree.next.contents,
-            self.t[1].htree))
-        self.assertTrue(check_equal_addresses(self.t.first.contents, 
-                self.t[0].htree))
-
-    def test_insert_first_2(self):
-        self.load_tree()
-        n0 = self.t[0]
-        t = n0.children
-        n = TreeNode(heracles=self.h, label="test_insert", value="0")
-        t.insert(0, n)
-        self.assertTrue(t["test_insert"].value == "0")
-        self.assertTrue(t[0].value == "0")
-        self.assertTrue(len(t) == 4)
-        self.assertTrue(t[0].next == t[1])
-        self.assertTrue(check_equal_addresses(t[0].htree.next.contents,
-            t[1].htree))
-        self.assertTrue(check_equal_addresses(t.first.contents, t[0].htree))
-        self.assertTrue(check_equal_addresses(t.parent.htree.children.contents, 
-                t[0].htree))
-        self.assertTrue(check_equal_addresses(t[0].parent.htree.children.contents, 
-                t[0].htree))
-
-    def test_insert_last(self):
-        self.load_tree()
-        t = TreeNode(heracles=self.h, label="test_insert", value="0")
-        self.t.insert(3, t)
-        self.assertTrue(self.t["test_insert"].value == "0")
-        self.assertTrue(self.t[3].value == "0")
-        self.assertTrue(len(self.t) == 4)
-        self.assertTrue(self.t[2].next == self.t[3])
-        self.assertTrue(check_equal_addresses(self.t[2].htree.next.contents,
-            self.t[3].htree))
-
-    def test_insert_last_2(self):
-        self.load_tree()
-        n0 = self.t[0]
-        t = n0.children
-        n = TreeNode(heracles=self.h, label="test_insert", value="0")
-        t.insert(3, n)
-        self.assertTrue(t["test_insert"].value == "0")
-        self.assertTrue(t[3].value == "0")
-        self.assertTrue(len(t) == 4)
-        self.assertTrue(t[2].next == t[3])
-        self.assertTrue(t[3].parent == n0)
-        self.assertTrue(check_equal_addresses(t[3].htree.parent.contents,
-            n0.htree))
-        self.assertTrue(check_equal_addresses(t[2].htree.next.contents,
-            t[3].htree))
-
-    def test_append(self):
-        self.load_tree()
-        t = TreeNode(heracles=self.h, label="test_insert", value="0")
-        self.t.append(t)
-        self.assertTrue(self.t["test_insert"].value == "0")
-        self.assertTrue(self.t[3].value == "0")
-        self.assertTrue(len(self.t) == 4)
-        self.assertTrue(self.t[2].next == self.t[3])
-        self.assertTrue(check_equal_addresses(self.t[2].htree.next.contents,
-            self.t[3].htree))
+    def test_append_1(self):
+        node = TreeNode(label="x", value="x1")
+        self.t.append(node)
+        self.assertTrue('x' in self.t)
+        self.assertEqual(self.t.index(node), len(self.t)-1)
 
     def test_append_2(self):
-        self.load_tree()
-        n0 = self.t[0]
-        t = n0.children
-        n = TreeNode(heracles=self.h, label="test_insert", value="0")
+        node = TreeNode(label="x", value="x1")
+        self.t['a'].children.append(node)
+        self.assertTrue('x' in self.t['a'].children)
+        self.assertEqual(self.t['a'].children.index(node), len(self.t['a'].children) - 1)
+
+    def test_remove_1(self):
+        node = self.t['a'][0]
+        self.t.remove(node)
+        self.assertFalse('a' in self.t)
+
+    def test_remove_2(self):
+        node = self.t['a'].children['a11'][0]
+        self.t['a'].children.remove(node)
+        self.assertFalse('a11' in self.t['a'].children)
+
+    def test_add_new_node(self):
+        self.t.add_new_node(label="x", value="x1")
+        self.assertEqual(len(self.t), 6)
+        self.assertEqual(self.t[-1].label, "x")
+        self.assertEqual(self.t[-1].value, "x1")
+        self.assertTrue(isinstance(self.t[-1], TreeNode))
+
+    def test_add_new_list_node(self):
+        self.t.add_new_list_node(label="x", value="x1")
+        self.assertEqual(len(self.t), 6)
+        self.assertEqual(self.t[-1].label, "x")
+        self.assertEqual(self.t[-1].value, "x1")
+        self.assertTrue(isinstance(self.t[-1], ListTreeNode))
+
+    def test_insert_new_node(self):
+        self.t.insert_new_node(2, label="x", value="x1")
+        self.assertEqual(len(self.t), 6)
+        self.assertEqual(self.t[2].label, "x")
+        self.assertEqual(self.t[2].value, "x1")
+        self.assertTrue(isinstance(self.t[2], TreeNode))
+
+    def test_insert_new_list_node(self):
+        self.t.insert_new_list_node(2, label="x", value="x1")
+        self.assertEqual(len(self.t), 6)
+        self.assertEqual(self.t[2].label, "x")
+        self.assertEqual(self.t[2].value, "x1")
+        self.assertTrue(isinstance(self.t[2], TreeNode))
+
+    # TODO Test add new node insert new node and put
+
+class ListTreeTest(TestCase):
+    def setUp(self):
+        self.t = ListTree()
+        self.t.add_new_list_node('a1')
+        self.t['#comment'] = 'comment'
+        self.t.add_new_node('b1')
+        self.t.add_new_node('c1')
+        self.t.add_new_node('d1')
+        t2 = self.t[0].children
+        t2.add_new_node('a11')
+        t2.add_new_node('a12')
+        t2['#comment'] = 'comment'
+        t2.add_new_node('a13')
+        t2.add_new_node('a14')
+
+    def check_list_tree_sanity(self, t):
+        i = 1
+        for n in t._nodes:
+            try:
+                n_i = int(n.label)
+                if n_i != i:
+                    self.fail('Insane tree')
+                i += 1
+            except:
+                pass
+
+    def tearDown(self):
+        del self.t
+
+    def test_repr(self):
+        self.assertTrue(len(str(self.t)) > 0)
+
+    def test_tree(self):
+        self.check_list_tree_sanity(self.t)
+        self.assertTrue(isinstance(self.t, ListTree))
+        self.assertEqual(self.t[0].value, 'a1')
+        self.assertEqual(self.t[1].value, 'b1')
+        self.assertEqual(self.t[2].value, 'c1')
+        self.assertEqual(self.t[3].value, 'd1')
+        self.assertTrue('a1' in self.t)
+        self.assertTrue('b1' in self.t)
+        self.assertTrue('c1' in self.t)
+        self.assertTrue('d1' in self.t)
+        t = self.t[0]
+        t2 = t.children
+        self.assertTrue(isinstance(t2, ListTree))
+        self.assertEqual(t2[0].value, 'a11')
+        self.assertEqual(t2[0].parent, t)
+        self.assertEqual(t2[1].value, 'a12')
+        self.assertEqual(t2[1].parent, t)
+        self.assertEqual(t2[2].value, 'a13')
+        self.assertEqual(t2[2].parent, t)
+        self.assertEqual(t2[3].value, 'a14')
+        self.assertEqual(t2[3].parent, t)
+        self.assertTrue('a11' in t2)
+        self.assertTrue('a12' in t2)
+        self.assertTrue('a13' in t2)
+        self.assertTrue('a14' in t2)
+
+    def test_insert_1(self):
+        n = TreeNode(value="x")
+        self.t.insert(2,n)
+        self.assertEqual(self.t[2].value, "x")
+        self.assertEqual(self.t[2].label, "3")
+        self.check_list_tree_sanity(self.t)
+
+    def test_insert_2(self):
+        n = TreeNode(value="x")
+        t = self.t[0].children
+        t.insert(2,n)
+        self.assertEqual(t[2].value, "x")
+        self.assertEqual(t[2].label, "3")
+        self.check_list_tree_sanity(self.t[0].children)
+
+    def test_append_1(self):
+        n = TreeNode(value="x")
+        self.t.append(n)
+        self.assertEqual(self.t[4].value, "x")
+        self.assertEqual(self.t[4].label, "5")
+        self.assertEqual(self.t[-1].value, "x")
+        self.assertEqual(self.t[-1].label, "5")
+        self.check_list_tree_sanity(self.t)
+
+    def test_append_2(self):
+        n = TreeNode(value="x")
+        t = self.t[0].children
         t.append(n)
-        self.assertTrue(t["test_insert"].value == "0")
-        self.assertTrue(t[3].value == "0")
-        self.assertTrue(len(t) == 4)
-        self.assertTrue(t[2].next == t[3])
-        self.assertTrue(t[3].parent == n0)
-        self.assertTrue(check_equal_addresses(t[3].htree.parent.contents,
-            n0.htree))
-        self.assertTrue(check_equal_addresses(t[2].htree.next.contents,
-            t[3].htree))
+        self.assertEqual(t[4].value, "x")
+        self.assertEqual(t[4].label, "5")
+        self.assertEqual(t[-1].value, "x")
+        self.assertEqual(t[-1].label, "5")
+        self.check_list_tree_sanity(self.t[0].children)
 
-    def test_remove_first(self):
-        self.load_tree()
-        n = self.t[0]
-        self.t.remove(n)
-        self.assertTrue(n.parent is None)
-        self.assertTrue(n.next is None)
-        n2 = self.t[0]
-        self.assertFalse(n == n2)
-        self.assertTrue(self.t.first.contents.label == n2.htree.label)
-        self.assertTrue(check_equal_addresses(self.t.first.contents, 
-                n2.htree))
-
-    def test_remove_first_2(self):
-        self.load_tree()
-        t = self.t[0].children
-        n = t[0]
-        t.remove(n)
-        self.assertTrue(n.parent is None)
-        self.assertTrue(n.next is None)
-        n2 = t[0]
-        self.assertFalse(n == n2)
-        self.assertTrue(t.first.contents.label == n2.htree.label)
-        self.assertTrue(check_equal_addresses(t.first.contents, 
-                n2.htree))
-        self.assertTrue(check_equal_addresses(n2.parent.htree.children.contents,
-                n2.htree))
-
-    def test_remove_middle(self):
-        self.load_tree()
-        n = self.t[1]
-        self.t.remove(n)
-        self.assertTrue(n.parent is None)
-        self.assertTrue(n.next is None)
-        n1 = self.t[0]
-        n2 = self.t[1]
-        self.assertFalse(n == n2)
-        self.assertTrue(check_equal_addresses(n1.htree.next.contents, n2.htree))
-        t = self.t[0].children
-        n = t[1]
-        t.remove(n)
-        self.assertTrue(n.parent is None)
-        self.assertTrue(n.next is None)
-        n1 = t[0]
-        n2 = t[1]
-        self.assertFalse(n == n2)
-        self.assertTrue(check_equal_addresses(n1.htree.next.contents, n2.htree))
-
-    def test_remove_last(self):
-        self.load_tree()
+    def test_remove_1(self):
         n = self.t[2]
         self.t.remove(n)
-        self.assertTrue(n.parent is None)
-        self.assertTrue(n.next is None)
-        n2 = self.t[1]
-        self.assertTrue(n2.next is None)
+        self.assertEqual(self.t[2].value, "d1")
+        self.assertEqual(self.t[2].label, "3")
+        self.assertTrue(len(self.t), 3)
+        self.check_list_tree_sanity(self.t)
+
+    def test_remove_2(self):
         t = self.t[0].children
         n = t[2]
         t.remove(n)
-        self.assertTrue(n.parent is None)
-        self.assertTrue(n.next is None)
-        n2 = t[1]
-        self.assertTrue(n2.next is None)
+        self.assertEqual(t[2].value, "a14")
+        self.assertEqual(t[2].label, "3")
+        self.assertTrue(len(t), 3)
+        self.check_list_tree_sanity(t)
 
-    def test_serialize(self):
-        self.load_tree()
-        data = self.t.serialize()
-        check_serialized_equal(self, data, self.t)
+    def test_index(self):
+        t = self.t[0].children
+        for i in range(0,4):
+            self.assertEqual(self.t.index(self.t[i]), i)
+            self.assertEqual(t.index(t[i]), i)
 
-class ParsedTreeTest(TestCase):
-    def setUp(self):
-        self.h = heracles
-        self.text = file(DATA_FILE).read()
-        self.lens = self.h.lenses['Aptsources']
-        self.tree = self.lens.get(self.text)
+    def test_add_new_node(self):
+        self.t.add_new_node("x")
+        self.assertEqual(len(self.t), 5)
+        self.assertEqual(self.t[-1].value, "x")
+        self.assertTrue(isinstance(self.t[-1], TreeNode))
 
-    def tearDown(self):
-        del self.h
-        del self.tree
+    def test_add_new_list_node(self):
+        self.t.add_new_list_node("x")
+        self.assertEqual(len(self.t), 5)
+        self.assertEqual(self.t[-1].value, "x")
+        self.assertTrue(isinstance(self.t[-1], ListTreeNode))
 
-    def check_tree(self, tree):
-        struct = tree.first
-        for node in tree:
-            self.assertEqual(node.tree, tree)
-            check_equal_addresses(struct, c.pointer(node.htree))
-            if node.parent is not None:
-                check_equal_addresses(struct.contents.parent, c.pointer(node.parent.htree))
-            self.check_tree(node.children)
-            struct = struct.contents.next
+    def test_insert_new_node(self):
+        self.t.insert_new_node(2, "x")
+        self.assertEqual(len(self.t), 5)
+        self.assertEqual(self.t[2].value, "x")
+        self.assertTrue(isinstance(self.t[2], TreeNode))
 
-    def test_structure(self):
-        self.check_tree(self.tree)
+    def test_insert_new_list_node(self):
+        self.t.insert_new_list_node(2, "x")
+        self.assertEqual(len(self.t), 5)
+        self.assertEqual(self.t[2].value, "x")
+        self.assertTrue(isinstance(self.t[2], ListTreeNode))
+
 
 if __name__ == "__main__":
     import unittest

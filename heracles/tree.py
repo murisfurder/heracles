@@ -1,18 +1,322 @@
-from heracles.structs import struct_tree_p
-from heracles.exceptions import HeraclesTreeLabelError, HeraclesListTreeError
+from heracles.exceptions import HeraclesTreeLabelError, HeraclesListTreeError, HeraclesTreeError
 from heracles.util import check_int
 
-class RawTree(object):
-    def __init__(self, raw_tree_p):
-        self.raw_tree_p = raw_tree_p
+def check_list_nodes(nodes):
+    """Utility function that detects if nodes can be propertly managed
+    by a ListTree object"""
+    value = 1
+    for n in nodes:
+        try:
+            l = int(n.label)
+            if l == value:
+                value += 1
+            else:
+                return False
+        except:
+            pass
+    return False if value == 1 else True
+
+def get_tree_from_nodes(nodes, lens=None):
+    """Function that selects the best kind of tree object to manage
+    some nodes. This function is intended to build the root tree"""
+    if check_list_nodes(nodes):
+        return ListTree(parent=None, nodes=nodes, lens=lens)
+    else:
+        return Tree(parent=None, nodes=nodes, lens=lens)
+
+def get_node(children, label="", value="", parent=None):
+    """Given a sequence of children nodes returns the right parent instance
+    to handle them"""
+    assert(isinstance(children, list))
+    node_class = ListTreeNode if check_list_nodes(children) else TreeNode
+    return node_class(label=label, value=value, parent=parent, children=children)
+
+class Tree(object):
+    @classmethod
+    def build_from_parent(cls, parent, nodes, default_node_class):
+        return cls(parent=parent, nodes=nodes, 
+                default_node_class=default_node_class)  
+
+    def __init__(self, parent=None, nodes=None, lens=None, 
+            default_node_class=None):
+        assert(isinstance(parent, TreeNode) or parent is None)
+        self.parent = parent
+        self.lens = lens
+        self._nodes = nodes if nodes is not None else []
+        self.default_node_class = TreeNode if default_node_class is None else default_node_class
+
+    def insert(self, index, node):
+        assert(isinstance(node, TreeNode))
+        node.parent = self.parent
+        self._nodes.insert(index, node)
+
+    def append(self, node):
+        assert(isinstance(node, TreeNode))
+        node.parent = self.parent
+        self._nodes.append(node)
+
+    def has_key(self, name):
+        assert(isinstance(name, str) or isinstance(name, int))
+        if isinstance(name, int):
+            name = str(name)
+        for item in self._nodes:
+            if item.label == name:
+                return True
+        return False
+
+    def index(self, node):
+        assert(isinstance(node, TreeNode))
+        if not node in self._nodes:
+            raise ValueError('Node not in tree')
+        return self._nodes.index(node)
+
+    def remove(self, node):
+        assert(isinstance(node, TreeNode))
+        if not node in self._nodes:
+            raise ValueError("%s not in %s" % (str(node), str(self)))
+        self._nodes.remove(node)
+
+    def add_new_node(self, label="", value="", node_class=None):
+        if node_class is None:
+            node_class = self.default_node_class
+        node = node_class(label=label, value=value)
+        self.append(node)
+
+    def insert_new_node(self, index, label="", value="", node_class=None):
+        if node_class is None:
+            node_class = self.default_node_class
+        node = node_class(label=label, value=value)
+        self.insert(index, node)
+
+    def add_new_list_node(self, label="", value=""):
+        self.add_new_node(label=label, value=value, node_class=ListTreeNode)
+
+    def insert_new_list_node(self, index, label="", value=""):
+        self.insert_new_node(index, label=label, value=value, 
+                node_class=ListTreeNode)
+
+    # Lens methods
+
+    def put(self, text):
+        if self.lens is None:
+            raise HeraclesTreeError("Unable to put. This tree has no lens")
+        return self.lens.put(self, text)
+
+    # Special methods
 
     def __iter__(self):
-        node_p = self.raw_tree_p
-        while True:
-            if not node_p:
-                break
-            yield node_p.contents
-            node_p = node_p.contents.next
+        for node in self._nodes:
+            yield node
+
+    def __getitem__(self, name):
+        if isinstance(name, basestring):
+            return LabelNodeList.build(self, name)
+        elif isinstance(name, int):
+            return self._get_item_by_integer(name)
+        else:
+            raise KeyError("Unsupported key type '%s'" % str(type(name)))
+
+    def __delitem__(self, item):
+        self.remove(item)
+
+    def __setitem__(self, name, value):
+        assert(isinstance(value, str) or isinstance(value, TreeNode))
+        assert(isinstance(name, str) or isinstance(name, int))
+        if isinstance(name, str):
+            if isinstance(value, str):
+                value = self.default_node_class(label=name, value=value, 
+                        parent=self.parent)
+            elif isinstance(value, TreeNode):
+                value.label = name
+                value.parent = self.parent
+            self._nodes.append(value)
+        elif isinstance(name, int):
+            self._set_item_by_integer(name, value)
+
+    def _check_index(self, index):
+        l = len(self)
+        if index < 0:
+            index = l + index
+        return 0 <= index < l 
+
+    def _get_item_by_integer(self, index):
+        if not self._check_index(index):
+            raise IndexError("Tree index out of range")
+        return self._nodes[index]
+
+    def _set_item_by_integer(self, index, value):
+        if not self._check_index(index):
+            raise IndexError("Tree assignment out of range")
+        if isinstance(value, str):
+            self[index].value = value
+        elif isinstance(value, TreeNode):
+            value.tree = self
+            self._nodes[index] = value
+
+    def __repr__(self):
+        return "<%s nodes:%s>" % (self.__class__.__name__,",".join(map(str, self._nodes)))
+
+    def __contains__(self, value):
+        if isinstance(value, TreeNode):
+            return value in self._nodes
+        elif isinstance(value, str):
+            for n in self._nodes:
+                if n.label == value:
+                    return True
+            return False
+        else:
+            raise HeraclesTreeError('Unsupported type')
+
+    def __len__(self):
+        return len(self._nodes)
+
+    def serialize(self):
+        res = []
+        for item in self:
+            res.append(item.serialize())
+        return res
+
+class ListTree(Tree):
+    # index : As it works in getitem set item.
+    # raw_index : The self._nodes node intex
+    # label_index : The index as it is stored in node.label
+
+    def insert(self, index, tree_node):
+        assert(isinstance(tree_node, TreeNode)) 
+        assert(isinstance(index, int))
+        label_index = index + 1
+        tree_node.label = str(label_index)
+        raw_index = self._get_raw_index(index)
+        super(ListTree, self).insert(raw_index, tree_node)
+        self._update_index(label_index + 1, +1)
+
+    def append(self, tree_node):
+        assert(isinstance(tree_node, TreeNode))
+        last_index = len(self)
+        tree_node.label = str(last_index + 1)
+        super(ListTree, self).append(tree_node)
+
+    def remove(self, tree_node):
+        assert(isinstance(tree_node, TreeNode))
+        super(ListTree, self).remove(tree_node)
+        try:
+            label_index = int(tree_node.label)
+            index = label_index - 1
+            self._update_index(index, -1)
+        except ValueError:
+            pass
+
+    def add_new_node(self, value, node_class=None):
+        if node_class is None:
+            node_class = self.default_node_class
+        node = node_class(value=value)
+        self.append(node)
+
+    def insert_new_node(self, index, value, node_class=None):
+        if node_class is None:
+            node_class = self.default_node_class
+        node = node_class(value=value)
+        self.insert(index, node)
+
+    def add_new_list_node(self, value):
+        self.add_new_node(value, node_class=ListTreeNode)
+
+    def insert_new_list_node(self, index, value):
+        self.insert_new_node(index, value, node_class=ListTreeNode)
+
+    def index(self, tree_node):
+        assert(isinstance(tree_node, TreeNode))
+        if tree_node in self:
+            try:
+                label_index = int(tree_node.label)
+                return label_index - 1
+            except ValueError:
+                raise HeraclesListTreeError('TreeNode is not an indexed node')
+        else:
+            raise ValueError('Node not in tree')
+
+    def _get_raw_index(self, index):
+        l = len(self)
+        if index < 0:
+            index = l + index
+        if not 0 <= index < l:
+            raise IndexError('Index out of range')
+        for i, node in enumerate(self._nodes):
+            try:
+                label_index = int(node.label)
+                if label_index - 1 == index:
+                    return i
+            except ValueError:
+                pass
+
+    def _update_index(self, from_index, value):
+        """Updates labels of the next items to keep sequentiality"""
+        from_label_index = from_index + 1
+        for item in self:
+            label = int(item.label)
+            if label >= from_label_index:
+                item.label = str(label + value)
+
+    def _get_item_by_integer(self, index):
+        raw_index = self._get_raw_index(index)
+        return self._nodes[raw_index]
+
+    def _set_item_by_integer(self, index, value):
+        raw_index = self._get_raw_index(index)
+        if isinstance(value, str):
+            self._nodes[raw_index].value = value
+        elif isinstance(value, TreeNode):
+            value.parent = self.parent
+            self._nodes[raw_index] = value
+
+    def __contains__(self, value):
+        assert(isinstance(value, str) or isinstance(value, TreeNode))
+        if isinstance(value, TreeNode):
+            return value in self._nodes
+        for n in self:
+            if n.value == value:
+                return True
+        return False
+
+    def __iter__(self):
+        for child in self._nodes:
+            if check_int(child.label): 
+                yield child
+
+    def __len__(self):
+        i = 0
+        for node in self:
+            i += 1
+        return i
+
+class TreeNode(object):
+    children_class = Tree
+
+    def __init__(self, label="", value="", parent=None, children=None, 
+            default_children_class=None):
+        assert(isinstance(label, str) or label is None)
+        assert(isinstance(value, str) or value is None)
+        assert(isinstance(parent, TreeNode) or parent is None)
+        self.parent = parent
+        self.label = label
+        self.value = value
+        children = [] if children is None else children
+        self.children = self.children_class.build_from_parent(self, children,
+                default_children_class)
+
+    def serialize(self):
+        res = {}
+        res['label'] = self.label
+        res['value'] = self.value
+        res['children'] = self.children.serialize()
+        return res
+
+    def __repr__(self):
+        return "<%s label:'%s' value:'%s' children:%d>" % (self.__class__.__name__,
+                self.label, self.value, len(self.children))
+
+class ListTreeNode(TreeNode):
+    children_class = ListTree
 
 class LabelNodeList(object):
     @classmethod
@@ -43,6 +347,17 @@ class LabelNodeList(object):
         self._test_single_node_label()
         self[0].value = value
 
+    @property
+    def children(self):
+        self._test_single_node_label()
+        return self[0].children
+
+    @property
+    def parent(self):
+        self._test_single_node_label()
+        return self[0].parent
+
+    # Common list methods
     # Common list methods
 
     def __init__(self, tree, label):
@@ -58,7 +373,7 @@ class LabelNodeList(object):
         assert(isinstance(index, int))
         assert(isinstance(item, str) or isinstance(item, TreeNode))
         if isinstance(item, str):
-            item = TreeNode(self.tree.heracles, value=item, label=self.label, tree=self.tree)
+            item = TreeNode(value=item, label=self.label, tree=self.tree)
         else:
             item.label = self.label
         l = len(self)
@@ -76,7 +391,7 @@ class LabelNodeList(object):
     def append(self, item):
         assert(isinstance(item, str) or isinstance(item, TreeNode))
         if isinstance(item, str):
-            item = TreeNode(self.tree.heracles, value=item, label=self.label, tree=self.tree)
+            item = TreeNode(value=item, label=self.label, tree=self.tree)
         else:
             item.label = self.label
         self.tree.append(item)
@@ -124,7 +439,7 @@ class LabelNodeList(object):
 
     def __repr__(self):
         return "<%s values:%s>" % (self.__class__.__name__,
-                ",".join(map(lambda x:"'%s'" % x.v, self)))
+                ",".join(map(lambda x:"'%s'" % x.value, self)))
 
     def __str__(self):
         if len > 1:
@@ -132,258 +447,5 @@ class LabelNodeList(object):
         if len == 0:
             raise HeraclesTreeLabelError('Cannot return the value from an empty label')
         return self[0].value
-
-def get_nodes_from_raw_tree(heracles, first_p, parent=None):
-    assert(isinstance(first_p, struct_tree_p))
-    result = []
-    raw_node_p = first_p
-    while raw_node_p:
-        raw_node = raw_node_p.contents
-        if raw_node.children:
-            children = get_nodes_from_raw_tree(heracles, raw_node.children)
-        else:
-            children = []
-        label = raw_node.label.value
-        value = raw_node.value.value
-        node = TreeNode(heracles, label=label, value=value, parent=parent, 
-                children=children)
-        result.append(node)
-        raw_node_p = raw_node.next
-    return result
-
-class Tree(object):
-    tree_classes = []
-    node_class = None
-
-    @classmethod
-    def build_from_raw_tree_pointer(cls, heracles, first):
-        nodes = get_nodes_from_raw_tree(first)
-        return cls.build(heracles, nodes=nodes)
-
-    @classmethod
-    def build_from_parent(cls, parent):
-        cls.build(parent.heracles, parent=parent, nodes=parent.nodes)
-
-    @classmethod
-    def build(cls, heracles, parent=None, nodes=[]):
-        for tc in cls.tree_classes:
-            assert(issubclass(tc, cls))
-            if tc.check_tree(nodes):
-                return tc(heracles, parent=parent, nodes=nodes)
-        return cls(heracles=heracles, parent=parent, nodes=nodes)
-
-    @classmethod
-    def check_tree(cls, nodes):
-        return True
-        
-    def __init__(self, heracles, parent=None, nodes=[]):
-        assert(isinstance(parent, TreeNode) or parent is None)
-        self.parent = parent
-        self._nodes = nodes
-
-    def insert(self, index, node):
-        assert(isinstance(node, TreeNode))
-        node.tree = self
-        self._nodes.insert(index, node)
-
-    def append(self, node):
-        assert(isinstance(node, TreeNode))
-        node.tree = self
-        self._nodes.append(node)
-
-    def has_key(self, name):
-        assert(isinstance(name, str) or isinstance(name, int))
-        if isinstance(name, int):
-            name = str(name)
-        for item in self._nodes:
-            if item.label == name:
-                return True
-        return False
-
-    def remove(self, node):
-        assert(isinstance(node, TreeNode))
-        if not node in self._nodes:
-            raise ValueError("%s not in %s" % (str(node), str(self)))
-        self._nodes.remove(node)
-
-    def add_node(self, label="", value=""):
-        node = self.node_class(label=label, value=value)
-        self._nodes.append(node)
-
-    def insert_node(self, index, label="", value=""):
-        node = self.node_class(label=label, value=value)
-        self._nodes.insert(index, node)
-
-    # Special methods
-
-    def __iter__(self):
-        for node in self._nodes:
-            yield node
-
-    def __getitem__(self, name):
-        if isinstance(name, basestring):
-            return LabelNodeList.build(self, name)
-        elif isinstance(name, int):
-            return self._get_item_by_integer(name)
-        else:
-            raise KeyError("Unsupported key type '%s'" % str(type(name)))
-
-    def __delitem__(self, item):
-        self.remove(item)
-
-    def __setitem__(self, name, value):
-        assert(isinstance(value, str) or isinstance(value, TreeNode))
-        assert(isinstance(name, str) or isinstance(name, int))
-        if isinstance(name, str):
-            if isinstance(value, str):
-                self._add_child(label=name, value=value)
-            elif isinstance(value, TreeNode):
-                value.label = name
-                self.append(value)
-        elif isinstance(name, int):
-            self._set_item_by_integer(name, value)
-
-    def _check_index(self, index):
-        l = len(self)
-        if index < 0:
-            index = l + index
-        return 0 <= index < l 
-
-    def _get_item_by_integer(self, index):
-        if not self._check_index(index):
-            raise IndexError("Tree index out of range")
-        return self._nodes[index]
-
-    def _set_item_by_integer(self, index, value):
-        if not self._check_index(index):
-            raise IndexError("Tree assignment out of range")
-        if isinstance(value, str):
-            self[index].value = value
-        elif isinstance(value, TreeNode):
-            value.tree = self
-            self._nodes[index] = value
-
-    def __repr__(self):
-        return "<%s nodes:%s>" % (self.__class__.__name__,",".join(map(str, self._nodes)))
-
-    def __len__(self):
-        return len(self._nodes)
-
-    def serialize(self):
-        res = []
-        for item in self:
-            res.append(item.serialize())
-        return res
-
-class ListTree(Tree):
-    # index : As it works in getitem set item.
-    # raw_index : The self._nodes node intex
-    # label_index : The index as it is stored in node.label
-
-    def _get_raw_index(self, index):
-        l = len(self)
-        if index < 0:
-            index = l + index
-        if not 0 <= index < l:
-            raise IndexError('Index out of range')
-        for i, node in enumerate(self):
-            try:
-                label_index = int(node.label)
-                if label_index - 1 == index:
-                    return i
-            except ValueError:
-                pass
-
-    def _update_index(self, from_index, value):
-        """Updates labels of the next items to keep sequentiality"""
-        from_label_index = from_index + 1
-        for item in self:
-            label = int(item.label)
-            if label >= from_label_index:
-                item.label = str(label + value)
-
-    def insert(self, index, tree_node):
-        assert(isinstance(tree_node, TreeNode)) 
-        assert(isinstance(index, int))
-        raw_index = self._get_raw_index(index)
-        super(ListTree, self).insert(raw_index, tree_node)
-        self._update_index(index + 1, +1)
-
-    def append(self, tree_node):
-        assert(isinstance(tree_node, TreeNode))
-        last_index = int(self[-1].label)
-        tree_node.label = str(last_index + 1)
-        super(ListTree, self).append(tree_node)
-
-    def remove(self, tree_node):
-        assert(isinstance(tree_node, TreeNode))
-        super(ListTree, self).remove(tree_node)
-        try:
-            label_index = int(tree_node.label)
-            index = label_index - 1
-            self._update_index(index, -1)
-        except ValueError:
-            pass
-
-    def index(self, tree_node):
-        assert(isinstance(tree_node, TreeNode))
-        if tree_node in self:
-            try:
-                label_index = int(tree_node.label)
-                return label_index - 1
-            except ValueError:
-                raise HeraclesListTreeError('TreeNode is not an indexed node')
-        else:
-            raise ValueError('Node not in tree')
-
-    def _get_item_by_integer(self, index):
-        raw_index = self._get_raw_index(index)
-        return super(ListTree, self)._get_item_by_integer(raw_index)
-
-    def _set_item_by_integer(self, index, value):
-        raw_index = self._get_raw_index(index)
-        return super(ListTree, self)._set_item_by_integer(raw_index, value)
-
-    def __iter__(self):
-        for child in self._nodes:
-            if check_int(child.label): 
-                yield child
-
-    def __len__(self):
-        for i, item in enumerate(self):
-            pass
-        return i+1
-
-# Update Tree object to detect ListTree objects
-Tree.tree_classes = [ListTree]
-
-class TreeNode(object):
-    def __init__(self, heracles, label=None, value=None, parent=None, children=[]):
-        assert(isinstance(label, str) or label is None)
-        assert(isinstance(value, str) or value is None)
-        assert(isinstance(parent, TreeNode) or parent is None)
-        self.heracles = heracles
-        self.parent = parent
-        if label is not None:
-            self.label = label
-        if value is not None:
-            self.value = value
-        self._children = children
-
-    @property
-    def children(self):
-        return Tree.build(parent=self, nodes=self._children)
-
-    def serialize(self):
-        res = {}
-        res['label'] = self.label
-        res['value'] = self.value
-        res['children'] = self.children.serialize()
-        return res
-
-    def __repr__(self):
-        return "<Heracles.TreeNode label:'%s' value:'%s' children:%d>" % (str(self.label),
-                str(self.value), len(self.children))
-
 
 

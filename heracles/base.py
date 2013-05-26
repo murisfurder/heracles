@@ -1,14 +1,10 @@
-from contextlib import contextmanager
 import ctypes as c
 from fnmatch import fnmatch
 from heracles.structs import struct_heracles, struct_tree, struct_tree_p, struct_lns_error
 from heracles.exceptions import get_exception
 from heracles.libs import libheracles
+from heracles.raw import UnmanagedRawTree, ManagedRawTree
 from heracles.tree import Tree
-
-def free_raw_tree(raw_tree):
-    assert(isinstance(raw_tree, struct_tree_p))
-    libheracles.free_tree_node(raw_tree)
 
 class HeraclesLenses(object):
     def __get__(self, obj, obj_type=None):
@@ -56,7 +52,7 @@ class Heracles(object):
             raise Exception
 
     def new_tree(self):
-        tree = Tree(heracles=self)
+        tree = Tree()
         return tree
 
     def get_lens_by_path(self, path):
@@ -84,24 +80,20 @@ class Lens(object):
         if err:
             raise Exception(err.contents.message)
 
-    @contextmanager
     def get(self, text):
         hera_get = libheracles.hera_get
         hera_get.restype = c.POINTER(struct_tree)
         error = c.POINTER(struct_lns_error)()
         tree_p = hera_get(self.lens, c.c_char_p(text), error)
         self._catch_error(error)
-        tree = Tree.build_from_raw_tree(heracles=self.heracles, first=tree_p)
-        yield tree
-        tree.delete()
-
+        return UnmanagedRawTree(tree_p, lens=self).build_tree()
 
     def put(self, tree, text):
-        tree = tree[0].pointer
+        raw_tree = ManagedRawTree.build_from_tree(tree)
         hera_put = libheracles.hera_put
         hera_put.restype = c.c_char_p
         error = c.POINTER(struct_lns_error)()
-        result = hera_put(self.lens, tree, c.c_char_p(text), error)
+        result = hera_put(self.lens, raw_tree.first, c.c_char_p(text), error)
         self._catch_error(error)
         return result
 
