@@ -53,10 +53,11 @@ class new_build(build):
     sub_commands = build.sub_commands + [('build_libheracles', lambda x:True)]
 
 setup(name="heracles",
-      version="0.0.3",
+      version="0.0.4-2",
       author="Jorge Monforte",
       author_email="jorge.monforte@gmail.com",
       packages=find_packages(exclude=["test"]),
+      package_data={"heracles.test":["data/*"]},
       test_suite = "heracles.test.test",
       cmdclass={'build':new_build, "build_libheracles":build_libheracles})
       

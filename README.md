@@ -15,8 +15,8 @@ is completely discouraged.
 Installing
 ----------
 
-It comes bundled with the libheracles installer so running *sudo 
-python setup.py install* should make the thing work.
+It comes bundled with libheracles so running *sudo python setup.py install* 
+should make the thing work.
 
 I have uploaded it to PIP, so the easiest way to get it working
 is through *sudo pip install heracles*.

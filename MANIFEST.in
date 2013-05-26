@@ -1,1 +1,2 @@
 include libheracles-1.0.0.tar.gz build_libheracles
+include heracles/test/data/*
