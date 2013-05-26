@@ -330,6 +330,10 @@ class LabelNodeList(object):
         else:
             return cls(tree, label)
 
+    def __init__(self, tree, label):
+        self.tree = tree
+        self.label = label
+
     # Masked methods used to access node properties in case there
     # is just one node to simplify syntax
 
@@ -358,22 +362,11 @@ class LabelNodeList(object):
         return self[0].parent
 
     # Common list methods
-    # Common list methods
-
-    def __init__(self, tree, label):
-        self.tree = tree
-        self.label = label
-
-    def remove(self, item):
-        if not item in self:
-            raise ValueError("Node not in list")
-        self.tree.remove(item)
-
     def insert(self, index, item):
         assert(isinstance(index, int))
         assert(isinstance(item, str) or isinstance(item, TreeNode))
         if isinstance(item, str):
-            item = TreeNode(value=item, label=self.label, tree=self.tree)
+            item = self.tree.default_node_class(value=item, label=self.label) 
         else:
             item.label = self.label
         l = len(self)
@@ -385,13 +378,19 @@ class LabelNodeList(object):
             self.append(item)
         else:
             t_item = self[index]
-            t_index = t_item.index
+            t_index = self.tree.index(t_item)
             self.tree.insert(t_index, item)
+
+    def remove(self, item):
+        if not item in self:
+            raise ValueError("Node not in list")
+        self.tree.remove(item)
 
     def append(self, item):
         assert(isinstance(item, str) or isinstance(item, TreeNode))
         if isinstance(item, str):
-            item = TreeNode(value=item, label=self.label, tree=self.tree)
+            item = self.tree.default_node_class(value=item, label=self.label) 
+                    
         else:
             item.label = self.label
         self.tree.append(item)

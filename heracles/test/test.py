@@ -202,7 +202,48 @@ class TreeTest(TestCase):
         self.assertEqual(self.t[2].value, "x1")
         self.assertTrue(isinstance(self.t[2], TreeNode))
 
-    # TODO Test add new node insert new node and put
+class LabelNodeListTest(TestCase):
+    def setUp(self):
+        self.t = Tree()
+        self.t['a'] = "1"
+        self.t['a'] = "2"
+        self.t['b'] = "x"
+        self.t['a'] = "3"
+        self.t['a'] = "4"
+        self.l = self.t['a']
+    
+    def test_repr(self):
+        self.assertTrue(len(self.l.__repr__()) > 0)
+
+    def test_labelnodelist(self):
+        self.assertEqual(len(self.l), 4)
+
+    def test_single_node(self):
+        self.assertEqual(self.t['b'].value, "x")
+        self.t['b'].value = "x1"
+        self.assertEqual(self.t['b'].value, "x1")
+        self.assertTrue(isinstance(self.t['b'].children, Tree))
+        self.assertTrue(self.t['b'].parent is None)
+
+    def test_insert_1(self):
+        self.l.insert(2,"xx")
+        self.assertEqual(self.l[2].value, "xx")
+        self.assertEqual(self.t[3].value, "xx")
+
+    def test_insert_2(self):
+        self.l.insert(-1,"xx")
+        self.assertEqual(self.l[-1].value, "xx")
+        self.assertEqual(self.l[4].value, "xx")
+
+    def test_append(self):
+        self.l.append("xx")
+        self.assertEqual(self.l[-1].value, "xx")
+
+    def test_remove(self):
+        n = self.l[1]
+        self.l.remove(n)
+        self.assertFalse(n in self.t)
+        self.assertEqual(len(self.l), 3)
 
 class ListTreeTest(TestCase):
     def setUp(self):
