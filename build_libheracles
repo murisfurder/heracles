@@ -1,6 +1,5 @@
 #! /bin/bash
 if [ -n "$1"]; then echo Must provide destination; exit 1; fi 
-if [ -n "$2"]; then echo Must provide library name; exit 1; fi 
 
 TMP=/tmp/
 VERSION=1.0.0
@@ -8,8 +7,8 @@ NAME=libheracles-"$VERSION"
 TMPDIR="$TMP""$NAME"
 FILE="$NAME".tar.gz
 EXIT=0
-LIBRARY_NAME="$2"
-LIB_FILE=src/.libs/"$LIBRARY_NAME"
+LIBRARY_NAME=libheracles
+LIB_SOURCE=src/.libs/"$LIBRARY_NAME"
 SRCDIR="$(pwd)"
 DEST_DIR="$SRCDIR"/"$1"
 LIB_DIR="$DEST_DIR"/libs
@@ -31,7 +30,7 @@ then
 fi
 mkdir -p "$LIB_DIR"
 mkdir -p "$LENS_DIR"
-cp "$TMPDIR"/"$LIB_FILE" "$LIB_DIR" 
+cp "$TMPDIR"/"$LIB_SOURCE"* "$LIB_DIR" 
 cp "$TMPDIR"/lenses/* "$LENS_DIR"/
 popd
 rm "$FILE"

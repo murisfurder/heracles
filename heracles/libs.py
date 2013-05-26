@@ -13,7 +13,7 @@ def get_library_name():
     if s == "Linux":
         ext = "so"
     elif s == "Darwin":
-        ext = "a"
+        ext = "dylib"
     elif s == "nt":
         ext = "dll"
     else:
@@ -21,7 +21,6 @@ def get_library_name():
     return LIBRARY_NAME + "." + ext
 
 def get_library_path():
-    import pdb; pdb.set_trace()
     h_path = get_heracles_path()
     library_name = get_library_name()
     return os.path.join(h_path, LIBRARY_DIR, library_name)
