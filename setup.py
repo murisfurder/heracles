@@ -1,6 +1,6 @@
 import os
 from os import chmod
-from shutil import copyfile
+from platform import system
 from stat import S_IRWXU
 from setuptools import setup, find_packages
 from distutils.cmd import Command
@@ -10,6 +10,7 @@ from subprocess import call
 
 LIBDIR = "lib"
 #ORIGIN_FILE = 
+LIBRARY_NAME = "libheracles"
 
 class build_libheracles(Command):
     user_options = [
@@ -37,9 +38,9 @@ class build_libheracles(Command):
     def compile(self):
         # set executable to install-libheracles
         chmod('build_libheracles', S_IRWXU)
-        dest_dir = self.get_dest_dir()
-
-        v =  call(['./build_libheracles', dest_dir] )
+        
+        v =  call(['./build_libheracles', self.get_dest_dir(),
+                    self.get_library_name()] )
         if v != 0:
             raise CompileError("Unable to compile libheracles")
 
@@ -49,6 +50,19 @@ class build_libheracles(Command):
         else:
             dest_dir = os.path.join(self.build_lib, 'heracles')
         return dest_dir
+
+    def get_library_name(self):
+        s = system()
+        if s == "Linux":
+            ext = "so"
+        elif s == "Darwin":
+            ext = "a"
+        elif s == "nt":
+            ext = "dll"
+        else:
+            raise Exception("Unknown operating system")
+        return LIBRARY_NAME + "." + ext
+
 
 class new_build(build):
     sub_commands = build.sub_commands + [('build_libheracles', lambda x:True)]

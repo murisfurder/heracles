@@ -1,6 +1,6 @@
 #! /bin/bash
-set -x
 if [ -n "$1"]; then echo Must provide destination; exit 1; fi 
+if [ -n "$2"]; then echo Must provide library name; exit 1; fi 
 
 TMP=/tmp/
 VERSION=1.0.0
@@ -8,7 +8,8 @@ NAME=libheracles-"$VERSION"
 TMPDIR="$TMP""$NAME"
 FILE="$NAME".tar.gz
 EXIT=0
-LIB_FILE="src/.libs/libheracles.so"
+LIBRARY_NAME="$2"
+LIB_FILE=src/.libs/"$LIBRARY_NAME"
 SRCDIR="$(pwd)"
 DEST_DIR="$SRCDIR"/"$1"
 LIB_DIR="$DEST_DIR"/libs
