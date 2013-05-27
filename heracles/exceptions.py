@@ -1,6 +1,8 @@
 class HeraclesError(Exception):
     pass
 
+# Different errors returned by heracles at init.
+
 class HeraclesNoMemError(HeraclesError):
     pass
 
@@ -46,14 +48,10 @@ exception_list = (None, HeraclesNoMemError, HeraclesNoMemError,
         HeraclesMXFMError, HeraclesNoSpanError, HeraclesMvDescError, 
         HeraclesCmdRunError, HeraclesBadArgError, HeraclesLabelError)
 
-def get_exception(heracles):
-    error = heracles.error
-    code = int(error.code)
-    exception = exception_list[code]
-    if exception is not None:
-        details = str(error.details)
-        
-        return exception(details)
+# Lens exceptions
+
+class HeraclesLensError(HeraclesError):
+    pass
 
 # Tree exceptions
 

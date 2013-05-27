@@ -2,10 +2,9 @@ import os
 import ctypes as c
 from fnmatch import fnmatch
 from heracles.structs import struct_heracles, struct_tree, struct_lns_error
-from heracles.exceptions import get_exception
+from heracles.exceptions import exception_list, HeraclesError, HeraclesLensError
 from heracles.libs import libheracles
 from heracles.raw import UnmanagedRawTree, ManagedRawTree
-from heracles.tree import Tree
 from heracles.util import get_heracles_path
 
 LENS_PATH = "lenses"
@@ -34,57 +33,73 @@ class HeraclesLenses(object):
         raise KeyError("Unable to find module %s" % name)
 
 class Heracles(object):
+    """
+    Main heracles object. Loads lenses into memory and makes them accessible
+    to the user.
+
+    """
     lenses = HeraclesLenses()
 
-    def get_load_path(self, loadpath):
-        if loadpath is None:
-            loadpath = []
-        base_lens_path = [os.path.join(get_heracles_path(), LENS_PATH)]
-        return PATH_SEP.join(base_lens_path + loadpath)
-
     def __init__(self, loadpath=None, flags=0):
+        """
+        Inits the heracles object with the parameters:
+        * ``loadpath`` : List of str paths to search for aditional lenses.
+        * ``flags`` : Flags to pass to de libheracles init function, 
+            mostly useless.
+        """
+
         if isinstance(loadpath, list):
             for path in loadpath:
                 if not isinstance(path, str):
-                    raise TypeError("loadpath items must be string")
+                    raise HeraclesError("loadpath items must be string")
         elif loadpath == None:
             pass
         else:
-            raise TypeError("loadpath MUST be a string or None!")
+            raise HeraclesError("loadpath MUST be a string or None!")
         if not isinstance(flags, int):
-            raise TypeError("flag MUST be a flag!")
+            raise HeraclesError("flag MUST be a flag!")
 
-        loadpath = self.get_load_path(loadpath)
+        loadpath = self._get_load_path(loadpath)
 
         hera_init = libheracles.hera_init
         hera_init.restype = c.POINTER(struct_heracles)
 
         self._handle = hera_init(loadpath, flags)
         if not self._handle:
-            raise RuntimeError("Unable to create Heracles object!")
+            raise HeraclesError("Unable to create Heracles object!")
 
-        self.error = self._handle.contents.error.contents
+        # If init returns an error raises exception
+        self._catch_exception()
 
-    def catch_exception(self):
-        exception = get_exception(self)
+    def _get_load_path(self, loadpath):
+        if loadpath is None:
+            loadpath = []
+        base_lens_path = [os.path.join(get_heracles_path(), LENS_PATH)]
+        return PATH_SEP.join(base_lens_path + loadpath)
+    
+    def _catch_exception(self):
+        error = self._handle.contents.error.contents
+        code = int(error.code)
+        exception = exception_list[code]
         if exception is not None:
-            raise Exception
-
-    def new_tree(self):
-        tree = Tree()
-        return tree
+            details = str(error.details)
+            raise exception(details)
 
     def get_lens_by_path(self, path):
         for lens in self.lenses:
             if lens.check_path(path):
                 return lens
 
+    def parse_file_from_path(self, path):
+        lens = self.get_lens_by_path(path)
+        text = file(path).read()
+        return lens.get(text)
+
     def __repr__(self):
         return "<Heracles object>"
 
     def __del__(self):
-        hera_close = libheracles.hera_close
-        hera_close(self._handle)
+        libheracles.hera_close(self._handle)
 
 class Lens(object):
     def __init__(self, heracles, module):
@@ -97,7 +112,7 @@ class Lens(object):
 
     def _catch_error(self, err):
         if err:
-            raise Exception(err.contents.message)
+            raise HeraclesLensError(err.contents.message)
 
     def get(self, text):
         hera_get = libheracles.hera_get

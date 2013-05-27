@@ -63,7 +63,7 @@ class FilterTest(TestCase):
 
 class TreeBuildTest(TestCase):
     def test_build_list_tree(self):
-        t = heracles.new_tree()
+        t = Tree()
         t['1'] = "a"
         t['2'] = "b"
         t['3'] = "c"
@@ -73,7 +73,7 @@ class TreeBuildTest(TestCase):
         self.assertTrue(isinstance(nt, ListTree))
 
     def test_build_list_tree_2(self):
-        t = heracles.new_tree()
+        t = Tree()
         t['3'] = "a"
         t['2'] = "b"
         t['1'] = "c"
@@ -83,7 +83,7 @@ class TreeBuildTest(TestCase):
         self.assertFalse(isinstance(nt, ListTree))
 
     def test_build_list_tree_3(self):
-        t = heracles.new_tree()
+        t = Tree()
         t['1'] = "c"
         t['1'] = "x"
         t['2'] = "b"
