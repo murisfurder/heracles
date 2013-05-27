@@ -17,45 +17,115 @@ def check_list_nodes(nodes):
     return False if value == 1 else True
 
 def get_tree_from_nodes(nodes, lens=None):
-    """Function that selects the best kind of tree object to manage
-    some nodes. This function is intended to build the root tree"""
+    """
+    Function that selects the best kind of tree object to manage
+    some nodes. This function is intended to build the root tree
+    
+    """
     if check_list_nodes(nodes):
         return ListTree(parent=None, nodes=nodes, lens=lens)
     else:
         return Tree(parent=None, nodes=nodes, lens=lens)
 
 def get_node(children, label="", value="", parent=None):
-    """Given a sequence of children nodes returns the right parent instance
-    to handle them"""
+    """
+    Given a sequence of children nodes returns the right parent instance
+    to handle them
+    
+    """
     assert(isinstance(children, list))
     node_class = ListTreeNode if check_list_nodes(children) else TreeNode
     return node_class(label=label, value=value, parent=parent, children=children)
 
 class Tree(object):
+    """
+    The basic object to store data returned from the lens parser. A ``Tree`` 
+    object stores a list of ``TreeNode`` and provides several methods to manage
+    them using standar python syntax.
+
+    Tree nodes behave someways like ``dict`` objects but as the augeas parser 
+    data structure allow multiple objects with the same label, when accessing 
+    them through the container syntax instead of returning a single object, it
+    returns a ``LabelNodeList`` instance, which is basically an object to manage
+    the sequence of objects with the same label.
+
+    The ``Tree`` objects and their subclasses are also used to handle the 
+    children of the ``TreeNode`` instances.
+
+    """
+
     @classmethod
     def build_from_parent(cls, parent, nodes, default_node_class):
         return cls(parent=parent, nodes=nodes, 
                 default_node_class=default_node_class)  
 
-    def __init__(self, parent=None, nodes=None, lens=None, 
+    def __init__(self, parent=None, nodes=None, lens=None, path=None,
             default_node_class=None):
+        """
+        Instantiates ``Tree`` object.
+
+        Kwargs:
+            ``parent`` (TreeNode) : If it is a children tree, the parent node.
+            ``nodes`` (list of TreeNode) : The list of nodes that the tree 
+                manages
+            ``lens`` (Lens) : If it is a master tree, it stores the lens object
+                to allow the ``put`` method to render back the text file.
+            ``path`` (str) : If it is a master tree, it stores the path of the
+                parsed file to allow the ``save`` method to store the changes.
+            ``default_node_class`` : (TreeNode class) The default node class
+                to be used when creating automaticaly new nodes.
+
+        Examples:
+            Create a Tree object:
+            >>> t = Tree()
+
+            Add a new node to the tree:
+            >>> t.add_new_node(label="new_node", value="value")
+
+            Get the first node of the tree:
+            >>> t[0]
+            <TreeNode label:'new_node' value:'value' children:0>
+
+            Get the LabelNodeList instance of nodes with label 'new_node':
+            >>> t['new_node']
+            <LabelNodeList label:'new_node' values:'value'>
+
+            Get the first node of the LabelNodeList:
+            >>> t['new_node'][0]
+            <TreeNode label:'new_node' value:'value' children:0>
+
+        """
+        
         assert(isinstance(parent, TreeNode) or parent is None)
         self.parent = parent
         self.lens = lens
+        self.path = path
         self._nodes = nodes if nodes is not None else []
         self.default_node_class = TreeNode if default_node_class is None else default_node_class
 
     def insert(self, index, node):
+        """
+        Insert ``node`` into ``index`` place.
+
+        """
         assert(isinstance(node, TreeNode))
         node.parent = self.parent
         self._nodes.insert(index, node)
 
     def append(self, node):
+        """
+        Appends ``node`` to tree.
+
+        """
         assert(isinstance(node, TreeNode))
         node.parent = self.parent
         self._nodes.append(node)
 
     def has_key(self, name):
+        """
+        Checks if the tree has any node with label ``name``.
+
+        """
         assert(isinstance(name, str) or isinstance(name, int))
         if isinstance(name, int):
             name = str(name)
@@ -65,42 +135,91 @@ class Tree(object):
         return False
 
     def index(self, node):
+        """
+        If the tree stores ``node`` returns its position in the tree.
+
+        """
         assert(isinstance(node, TreeNode))
         if not node in self._nodes:
             raise ValueError('Node not in tree')
         return self._nodes.index(node)
 
     def remove(self, node):
+        """
+        If the tree stores ``node`` removes the node from the tree.
+
+        """
         assert(isinstance(node, TreeNode))
         if not node in self._nodes:
             raise ValueError("%s not in %s" % (str(node), str(self)))
         self._nodes.remove(node)
 
     def add_new_node(self, label="", value="", node_class=None):
+        """
+        Appends a new node with the given ``label`` and ``value``. If not
+        ``node_class`` is given it uses the tree's ``default_node_class``.
+
+        """
         if node_class is None:
             node_class = self.default_node_class
         node = node_class(label=label, value=value)
         self.append(node)
 
     def insert_new_node(self, index, label="", value="", node_class=None):
+        """
+        Inserts a new node with the given ``label`` and ``value`` in the 
+        position given by ``index``. If not ``node_class`` is given it uses the
+        tree's ``default_node_class``.
+
+        """
         if node_class is None:
             node_class = self.default_node_class
         node = node_class(label=label, value=value)
         self.insert(index, node)
 
     def add_new_list_node(self, label="", value=""):
+        """
+        Appends a new ``ListTreeNode`` instance with the given ``label`` and 
+        ``value``. 
+
+        """
         self.add_new_node(label=label, value=value, node_class=ListTreeNode)
 
     def insert_new_list_node(self, index, label="", value=""):
+        """
+        Inserts a new ``ListTreeNode`` instance with the given ``label`` and 
+        ``value`` in the position given by ``index``. 
+
+        """
         self.insert_new_node(index, label=label, value=value, 
                 node_class=ListTreeNode)
 
     # Lens methods
 
-    def put(self, text):
+    def put(self, text=""):
+        """
+        If it is a master node it renders back to text applying the lens parser.
+
+        If ``text`` is given it uses it to merge with the data of the tree.
+
+        """
         if self.lens is None:
             raise HeraclesTreeError("Unable to put. This tree has no lens")
         return self.lens.put(self, text)
+
+    def save(self, text=""):
+        """
+        If it is a master node it renders back to text applying the lens parser
+        and saves the result to the file in ``path``.
+
+        If ``text`` is given it uses it to merge with the data of the tree.
+
+        """
+        if self.path is None:
+            raise HeraclesTreeError("Unable to dump to a file withot a given path")
+        dump = self.put(text)
+        with open(self.path, "w") as f:
+            f.write(dump)
 
     # Special methods
 
@@ -180,11 +299,21 @@ class Tree(object):
         return res
 
 class ListTree(Tree):
+    """
+    This is a subclass of ``Tree`` to handle list of nodes wich uses
+    counter as label, so it can be handled like a regular python ``list``
+    object.
+
+    """
     # index : As it works in getitem set item.
     # raw_index : The self._nodes node intex
     # label_index : The index as it is stored in node.label
 
     def insert(self, index, tree_node):
+        """
+        Insert ``node`` into ``index`` place.
+
+        """
         assert(isinstance(tree_node, TreeNode)) 
         assert(isinstance(index, int))
         label_index = index + 1
@@ -194,12 +323,35 @@ class ListTree(Tree):
         self._update_index(label_index + 1, +1)
 
     def append(self, tree_node):
+        """
+        Appends ``node`` to tree.
+
+        """
         assert(isinstance(tree_node, TreeNode))
         last_index = len(self)
         tree_node.label = str(last_index + 1)
         super(ListTree, self).append(tree_node)
 
+    def index(self, tree_node):
+        """
+        If the tree stores ``node`` returns its position in the tree.
+
+        """
+        assert(isinstance(tree_node, TreeNode))
+        if tree_node in self:
+            try:
+                label_index = int(tree_node.label)
+                return label_index - 1
+            except ValueError:
+                raise HeraclesListTreeError('TreeNode is not an indexed node')
+        else:
+            raise ValueError('Node not in tree')
+
     def remove(self, tree_node):
+        """
+        If the tree stores ``node`` removes the node from the tree.
+
+        """
         assert(isinstance(tree_node, TreeNode))
         super(ListTree, self).remove(tree_node)
         try:
@@ -210,33 +362,43 @@ class ListTree(Tree):
             pass
 
     def add_new_node(self, value, node_class=None):
+        """
+        Appends a new node with the given ``label`` and ``value``. If not
+        ``node_class`` is given it uses the tree's ``default_node_class``.
+
+        """
         if node_class is None:
             node_class = self.default_node_class
         node = node_class(value=value)
         self.append(node)
 
     def insert_new_node(self, index, value, node_class=None):
+        """
+        Inserts a new node with the given ``label`` and ``value`` in the 
+        position given by ``index``. If not ``node_class`` is given it uses the
+        tree's ``default_node_class``.
+        
+        """
         if node_class is None:
             node_class = self.default_node_class
         node = node_class(value=value)
         self.insert(index, node)
 
     def add_new_list_node(self, value):
+        """
+        Appends a new ``ListTreeNode`` instance with the given ``label`` and 
+        ``value``. 
+
+        """
         self.add_new_node(value, node_class=ListTreeNode)
 
     def insert_new_list_node(self, index, value):
-        self.insert_new_node(index, value, node_class=ListTreeNode)
+        """
+        Inserts a new ``ListTreeNode`` instance with the given ``label`` and 
+        ``value`` in the position given by ``index``. 
 
-    def index(self, tree_node):
-        assert(isinstance(tree_node, TreeNode))
-        if tree_node in self:
-            try:
-                label_index = int(tree_node.label)
-                return label_index - 1
-            except ValueError:
-                raise HeraclesListTreeError('TreeNode is not an indexed node')
-        else:
-            raise ValueError('Node not in tree')
+        """
+        self.insert_new_node(index, value, node_class=ListTreeNode)
 
     def _get_raw_index(self, index):
         l = len(self)
@@ -293,10 +455,29 @@ class ListTree(Tree):
         return i
 
 class TreeNode(object):
+    """
+    Basic storage unit of Heracles. Each ``Tree`` contains a list of 
+    ``TreeNode`` instance and of its subclasses.
+
+    ``TreeNode`` stores its children in a ``Tree`` instance.
+    """
     children_class = Tree
 
     def __init__(self, label="", value="", parent=None, children=None, 
             default_children_class=None):
+        """
+        ``TreeNode`` contains:
+            ``label`` (str) : A value that classifies the node.
+            ``value`` (str) : The value stored in the node.
+            ``parent`` (TreeNode) : If it is a children node, its parent.
+            ``children`` (list of TreeNode) : The list of nodes that are its
+                children.
+
+        Also you can provide the node with the ``default_children_class`` that 
+        can be used to automatic instantiate them.
+
+
+        """
         assert(isinstance(label, str) or label is None)
         assert(isinstance(value, str) or value is None)
         assert(isinstance(parent, TreeNode) or parent is None)
@@ -319,11 +500,34 @@ class TreeNode(object):
                 self.label, self.value, len(self.children))
 
 class ListTreeNode(TreeNode):
+    """
+    ``TreeNode`` stores its children in a ``Tree`` instance.
+
+    """
     children_class = ListTree
 
 class LabelNodeList(object):
+    """
+    ``LabelNodeList`` is a helper class that allows access to several nodes with
+    the same name.
+
+    Nodes can be accessed with a mixture of dict and list methods, so you can 
+    get the container methods to access numerically returning or setting
+    according to the order in the list, or by an string key that represents
+    the value of the node.
+
+    If there is a single node in the list you can use the ``value`` and
+    ``children`` of the ``LabelNodeList`` instance to access its contents.
+
+
+    """
     @classmethod
     def build(cls, tree, label):
+        """
+        Checks if there are nodes with ``label`` in ``tree`` before 
+        instantiating.
+
+        """
         i = 0
         for item in tree._nodes:
             if item.label == label:
@@ -346,26 +550,46 @@ class LabelNodeList(object):
 
     @property
     def value(self):
+        """
+        If there is a single node in the list returns its ``value``.
+
+        """
         self._test_single_node_label()
         return self[0].value
 
     @value.setter
     def value(self, value):
+        """
+        If there is a single node in the list sets its ``value``.
+
+        """
         self._test_single_node_label()
         self[0].value = value
 
     @property
     def children(self):
+        """
+        If there is a single node in the list returns its ``children``.
+
+        """
         self._test_single_node_label()
         return self[0].children
 
     @property
     def parent(self):
-        self._test_single_node_label()
-        return self[0].parent
+        """
+        Returns the parent of the tree instance.
+
+        """
+        return self.tree.parent
 
     # Common list methods
     def insert(self, index, item):
+        """
+        Insert ``node`` into ``index`` place, the order is keept inside the 
+        tree.
+
+        """
         assert(isinstance(index, int))
         assert(isinstance(item, str) or isinstance(item, TreeNode))
         if isinstance(item, str):
@@ -385,15 +609,22 @@ class LabelNodeList(object):
             self.tree.insert(t_index, item)
 
     def remove(self, item):
+        """
+        If the tree stores ``node`` removes the node from the tree.
+
+        """
         if not item in self:
             raise ValueError("Node not in list")
         self.tree.remove(item)
 
     def append(self, item):
+        """
+        Adds a node to the tree setting its label to the LabelNodeList label
+
+        """
         assert(isinstance(item, str) or isinstance(item, TreeNode))
         if isinstance(item, str):
             item = self.tree.default_node_class(value=item, label=self.label) 
-                    
         else:
             item.label = self.label
         self.tree.append(item)
@@ -448,8 +679,8 @@ class LabelNodeList(object):
         return i + 1
 
     def __repr__(self):
-        return "<%s values:%s>" % (self.__class__.__name__,
-                ",".join(map(lambda x:"'%s'" % x.value, self)))
+        return "<%s label:'%s' values:%s>" % (self.__class__.__name__,
+                self.label, ",".join(map(lambda x:"'%s'" % x.value, self)))
 
     def __str__(self):
         if len > 1:

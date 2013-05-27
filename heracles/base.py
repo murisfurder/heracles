@@ -47,9 +47,9 @@ class Heracles(object):
 
     def __init__(self, loadpath=None, flags=0):
         """
-        Inits the heracles object with the parameters:
-        * ``loadpath`` : List of str paths to search for aditional lenses.
-        * ``flags`` : Flags to pass to de libheracles init function, 
+        Inits the heracles object, optional kwargs:
+           ``loadpath`` (list of str) : Paths to search for aditional lenses.
+           ``flags`` (int) : Flags to pass to de libheracles init function, 
             mostly useless.
         """
 
@@ -91,14 +91,37 @@ class Heracles(object):
             raise exception(details)
 
     def get_lens_by_path(self, path):
+        """
+        Return the propper lens to parse a file given its path.
+
+        Args:
+            path (str) : Path of the file which its lens we want to edit.
+
+        """
         for lens in self.lenses:
             if lens.check_path(path):
                 return lens
 
     def parse_file_from_path(self, path):
+        """
+        Returns a Tree object parsing the file given its path.
+
+        The Tree object stores the path so it can be saved using its 
+        ``save`` method.
+
+        Args:
+            path (str) : Path of the file we want to parse.
+
+        """
+
+        # Out of unittesting method because it requires root privileges
+        # to run. But manually tested.
+
         lens = self.get_lens_by_path(path)
         text = file(path).read()
-        return lens.get(text)
+        tree = lens.get(text)
+        tree.path = path
+        return tree
 
     def __repr__(self):
         return "<Heracles object>"
@@ -107,7 +130,21 @@ class Heracles(object):
         libheracles.hera_close(self._handle)
 
 class Lens(object):
+    """
+    Object that stores an augeas lens parser ready to do get and put operations
+
+    This object is not intended to be instantiated manually but from the internal
+    methods of the ``Heracles`` object instance
+
+    """
     def __init__(self, heracles, module):
+        """
+        To init the object it requires:
+
+            ``heracles`` (Heracles) : An heracles object instance
+            ``module`` (struct_module) : A ctypes reference to a module struct.
+
+        """    
         self.heracles = heracles
         self.module = module.contents
         self.name = self.module.name
@@ -120,6 +157,10 @@ class Lens(object):
             raise HeraclesLensError(err.contents.message)
 
     def get(self, text):
+        """
+        Returns a tree from applying the lens parser to ``text``.
+
+        """
         hera_get = libheracles.hera_get
         hera_get.restype = c.POINTER(struct_tree)
         error = c.POINTER(struct_lns_error)()
@@ -127,7 +168,14 @@ class Lens(object):
         self._catch_error(error)
         return UnmanagedRawTree(tree_p, lens=self).build_tree()
 
-    def put(self, tree, text):
+    def put(self, tree, text=""):
+        """
+        Returns the dumped data from the tree after applying the inverse
+        lens parser to the lens.
+
+        If ``text`` is given it uses it to merge with the data of the tree.
+
+        """
         raw_tree = ManagedRawTree.build_from_tree(tree)
         hera_put = libheracles.hera_put
         hera_put.restype = c.c_char_p
@@ -136,7 +184,7 @@ class Lens(object):
         self._catch_error(error)
         return result
 
-    def iter_filters(self):
+    def _iter_filters(self):
         filter = self.filter
         while True:
             if not filter:
@@ -145,9 +193,13 @@ class Lens(object):
             filter = filter.contents.next
 
     def check_path(self, path):
+        """
+        Tests if the given ``path`` matches the criteria of the lens.
+
+        """
         positive = False
         negative = False
-        for filter in self.iter_filters():
+        for filter in self._iter_filters():
             res = check_filter(filter.contents, path)
             if res == True:
                 positive = True
