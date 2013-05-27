@@ -6,11 +6,16 @@ def get_heracles_path():
 
 SPACER = "    "
 
-def print_tree(tree, indent=0):
+def str_tree(tree, indent=0):
+    result = []
     for item in tree:
-        print SPACER * indent + "- label:'%s' value:'%s'" % (item.label, 
-                item.value)
-        print_tree(item.children, indent+1)
+        result.append(SPACER * indent + "- label:'%s' value:'%s'" % (item.label, 
+                item.value))
+        result.extend(str_tree(item.children, indent+1))
+    if indent == 0:
+        return "\n".join(result)
+    else:
+        return result
 
 def check_int(value):
     try:

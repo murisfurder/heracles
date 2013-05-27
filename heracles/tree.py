@@ -1,5 +1,5 @@
 from heracles.exceptions import HeraclesTreeLabelError, HeraclesListTreeError, HeraclesTreeError
-from heracles.util import check_int
+from heracles.util import check_int, str_tree
 
 def check_list_nodes(nodes):
     """Utility function that detects if nodes can be propertly managed
@@ -152,6 +152,9 @@ class Tree(object):
         elif isinstance(value, TreeNode):
             value.tree = self
             self._nodes[index] = value
+
+    def __str__(self):
+        return str_tree(self)
 
     def __repr__(self):
         return "<%s nodes:%s>" % (self.__class__.__name__,",".join(map(str, self._nodes)))
@@ -401,15 +404,23 @@ class LabelNodeList(object):
                 yield item
 
     def __getitem__(self, index):
-        assert(isinstance(index, int))
-        l = len(self)
-        if index < 0:
-            index = l + index
-        if not 0 <= index < l:
-            raise IndexError("Index out of range")
-        for i, item in enumerate(self):
-            if i == index:
-                return item
+        assert(isinstance(index, int) or isinstance(index, str))
+        if isinstance(index, int):
+            l = len(self)
+            if index < 0:
+                index = l + index
+            if not 0 <= index < l:
+                raise IndexError("Index out of range")
+            for i, item in enumerate(self):
+                if i == index:
+                    return item
+        elif isinstance(index, str):
+            for node in self:
+                if node.value == index:
+                    return node
+            raise ValueError("Node not in list")
+        else:
+            raise HeraclesTreeLabelError("Un supported index type")
 
     def __setitem__(self, index, value):
         assert(isinstance(value, str) or isinstance(value, TreeNode))

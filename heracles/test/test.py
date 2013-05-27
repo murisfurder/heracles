@@ -120,6 +120,8 @@ class TreeTest(TestCase):
         self.assertEqual(self.t['c'].value, 'c1')
         self.assertEqual(self.t['d'][0].value, 'd1')
         self.assertEqual(self.t['d'][1].value, 'd2')
+        self.assertEqual(self.t['d']['d1'].value, 'd1')
+        self.assertEqual(self.t['d']['d2'].value, 'd2')
         self.assertTrue('a' in self.t)
         self.assertTrue('b' in self.t)
         self.assertTrue('c' in self.t)

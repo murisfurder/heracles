@@ -7,6 +7,11 @@ from heracles.libs import libheracles
 from heracles.raw import UnmanagedRawTree, ManagedRawTree
 from heracles.util import get_heracles_path
 
+# TODO : 
+# - Finish documentation
+# - Add path to tree and save method to automate the edition of local files.
+
+
 LENS_PATH = "lenses"
 PATH_SEP = ":"
 
