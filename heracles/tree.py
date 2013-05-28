@@ -1,9 +1,22 @@
+"""
+
+This module implements the data structures used in the Heracles package.
+
+"""
+
 from heracles.exceptions import HeraclesTreeLabelError, HeraclesListTreeError, HeraclesTreeError
 from heracles.util import check_int, str_tree
 
 def check_list_nodes(nodes):
-    """Utility function that detects if nodes can be propertly managed
-    by a ListTree object"""
+    """
+    Utility function that detects if nodes can be propertly managed
+    by a ListTree object.
+
+    :param nodes: A list of :class:`TreeNode`.
+
+    :rtype: bool
+    
+    """
     value = 1
     for n in nodes:
         try:
@@ -20,6 +33,12 @@ def get_tree_from_nodes(nodes, lens=None):
     """
     Function that selects the best kind of tree object to manage
     some nodes. This function is intended to build the root tree
+
+    :param nodes: A list of :class:`TreeNode`.
+    :param lens: The lens where the tree is generated from.
+    :type lens: :class:`heracles.base.Lens`
+
+    :rtype: :class:`Tree` or :class:`ListTree`.
     
     """
     if check_list_nodes(nodes):
@@ -31,6 +50,17 @@ def get_node(children, label="", value="", parent=None):
     """
     Given a sequence of children nodes returns the right parent instance
     to handle them
+
+    :param children: The list of :class:`TreeNode` of we build its parent.
+        `TreeNode`.
+    :keyword label: The label of the node.
+    :type label: str
+    :keyword value: The value of the node.
+    :type value: str
+    :keyword parent: The parent of the node.
+    :type parent: :class:`Tree` or :class:`ListTree`.
+
+    :rtype: :class:`TreeNode` or :class:`ListTreeNode`.
     
     """
     assert(isinstance(children, list))
@@ -39,58 +69,71 @@ def get_node(children, label="", value="", parent=None):
 
 class Tree(object):
     """
-    The basic object to store data returned from the lens parser. A ``Tree`` 
-    object stores a list of ``TreeNode`` and provides several methods to manage
-    them using standar python syntax.
+    The basic object to store data returned from the lens parser. A 
+    :class:`Tree` object stores a list of :class:`TreeNode` and provides several
+    methods to manage them using standar python syntax.
 
     Tree nodes behave someways like ``dict`` objects but as the augeas parser 
     data structure allow multiple objects with the same label, when accessing 
     them through the container syntax instead of returning a single object, it
-    returns a ``LabelNodeList`` instance, which is basically an object to manage
-    the sequence of objects with the same label.
+    returns a :class:`LabelNodeList` instance, which is basically an object to 
+    manage the sequence of objects with the same label.
 
-    The ``Tree`` objects and their subclasses are also used to handle the 
-    children of the ``TreeNode`` instances.
+    The :class:`Tree` objects and their subclasses are also used to handle the 
+    :attr:`heracles.tree.TreeNode.children` attribute of the 
+    :class:`TreeNode` instances.
 
     """
 
     @classmethod
     def build_from_parent(cls, parent, nodes, default_node_class):
+        """
+        Builds the children :class:`Tree` of a node given the parent and its 
+        nodes.
+
+        :param parent: The parent node to create the children class.
+        :type parent: :class:`TreeNode`
+        :param nodes: The children nodes of the parent class.
+        :type nodes: `list` of :class:`TreeNode` or :class:`ListTreeNode`.
+        :param default_node_class: The default node class
+            to be used when creating automaticaly new nodes.
+        :type default_node_class: :class:`TreeNode` or :class:`ListTreeNode`
+
+        """
         return cls(parent=parent, nodes=nodes, 
                 default_node_class=default_node_class)  
 
     def __init__(self, parent=None, nodes=None, lens=None, path=None,
             default_node_class=None):
         """
-        Instantiates ``Tree`` object.
 
-        Kwargs:
-            ``parent`` (TreeNode) : If it is a children tree, the parent node.
-            ``nodes`` (list of TreeNode) : The list of nodes that the tree 
-                manages
-            ``lens`` (Lens) : If it is a master tree, it stores the lens object
-                to allow the ``put`` method to render back the text file.
-            ``path`` (str) : If it is a master tree, it stores the path of the
-                parsed file to allow the ``save`` method to store the changes.
-            ``default_node_class`` : (TreeNode class) The default node class
-                to be used when creating automaticaly new nodes.
+        :param parent: If it is a children tree, the parent node.
+        :type param: :class:`TreeNode`
+        :param nodes: The list of nodes that the tree manages
+        :type nodes: list of :class:`TreeNode`
+        :param lens: If it is a master tree, it stores the lens object
+            to allow the ``put`` method to render back the text file.
+        :type lens: :class:`heracles.base.Lens`
+        :param path: If it is a master tree, it stores the path of the
+            parsed file to allow the ``save`` method to store the changes.
+        :type path: ``str``
+        :param default_node_class: The default node class
+            to be used when creating automaticaly new nodes.
+        :type default_node_class: :class:`TreeNode` or :class:`ListTreeNode`
 
-        Examples:
-            Create a Tree object:
+        Examples::
+
+            #Create a Tree object:
             >>> t = Tree()
-
-            Add a new node to the tree:
+            #Add a new node to the tree:
             >>> t.add_new_node(label="new_node", value="value")
-
-            Get the first node of the tree:
+            #Get the first node of the tree:
             >>> t[0]
             <TreeNode label:'new_node' value:'value' children:0>
-
-            Get the LabelNodeList instance of nodes with label 'new_node':
+            #Get the LabelNodeList instance of nodes with label 'new_node':
             >>> t['new_node']
             <LabelNodeList label:'new_node' values:'value'>
-
-            Get the first node of the LabelNodeList:
+            #Get the first node of the LabelNodeList:
             >>> t['new_node'][0]
             <TreeNode label:'new_node' value:'value' children:0>
 
@@ -107,6 +150,11 @@ class Tree(object):
         """
         Insert ``node`` into ``index`` place.
 
+        :param node: The instance of :class:`TreeNode` or :class:'ListTreeNode' 
+            to insert.
+        :param index: The position where to insert the node.
+        :type index: ``int``
+
         """
         assert(isinstance(node, TreeNode))
         node.parent = self.parent
@@ -116,6 +164,9 @@ class Tree(object):
         """
         Appends ``node`` to tree.
 
+        :param node: The instance of :class:`TreeNode` or :class:'ListTreeNode' 
+            to append.
+
         """
         assert(isinstance(node, TreeNode))
         node.parent = self.parent
@@ -124,6 +175,10 @@ class Tree(object):
     def has_key(self, name):
         """
         Checks if the tree has any node with label ``name``.
+
+        :param name: The label to search for.
+        :type name: ``str``
+        :rtype: bool
 
         """
         assert(isinstance(name, str) or isinstance(name, int))
@@ -138,6 +193,10 @@ class Tree(object):
         """
         If the tree stores ``node`` returns its position in the tree.
 
+        :param node: The instance of :class:`TreeNode` or :class:'ListTreeNode'
+            to get its index.
+        :rtype: ``int``
+
         """
         assert(isinstance(node, TreeNode))
         if not node in self._nodes:
@@ -147,6 +206,9 @@ class Tree(object):
     def remove(self, node):
         """
         If the tree stores ``node`` removes the node from the tree.
+
+        :param node: The instance of :class:`TreeNode` or :class:'ListTreeNode' 
+            to remove from tree.
 
         """
         assert(isinstance(node, TreeNode))
@@ -158,6 +220,13 @@ class Tree(object):
         """
         Appends a new node with the given ``label`` and ``value``. If not
         ``node_class`` is given it uses the tree's ``default_node_class``.
+
+        :param label: The ``label`` of the new node.
+        :type label: ``str``
+        :param value: The ``value`` of the new node.
+        :type value: ``str``
+        :param node_class: The class of the node to create either 
+            :class:`TreeNode` or :class:`ListTreeNode`
 
         """
         if node_class is None:
@@ -171,6 +240,15 @@ class Tree(object):
         position given by ``index``. If not ``node_class`` is given it uses the
         tree's ``default_node_class``.
 
+        :param index: The position where to insert the node.
+        :type index: ``int``
+        :param label: The ``label`` of the new node.
+        :type label: ``str``
+        :param value: The ``value`` of the new node.
+        :type value: ``str``
+        :param node_class: The class of the node to create either 
+            :class:`TreeNode` or :class:`ListTreeNode`
+
         """
         if node_class is None:
             node_class = self.default_node_class
@@ -182,6 +260,11 @@ class Tree(object):
         Appends a new ``ListTreeNode`` instance with the given ``label`` and 
         ``value``. 
 
+        :param label: The ``label`` of the new node.
+        :type label: ``str``
+        :param value: The ``value`` of the new node.
+        :type value: ``str``
+
         """
         self.add_new_node(label=label, value=value, node_class=ListTreeNode)
 
@@ -189,6 +272,13 @@ class Tree(object):
         """
         Inserts a new ``ListTreeNode`` instance with the given ``label`` and 
         ``value`` in the position given by ``index``. 
+
+        :param index: The position where to insert the node.
+        :type index: ``int``
+        :param label: The ``label`` of the new node.
+        :type label: ``str``
+        :param value: The ``value`` of the new node.
+        :type value: ``str``
 
         """
         self.insert_new_node(index, label=label, value=value, 
@@ -200,7 +290,9 @@ class Tree(object):
         """
         If it is a master node it renders back to text applying the lens parser.
 
-        If ``text`` is given it uses it to merge with the data of the tree.
+        :param text: If given it uses it to merge with the data of the tree.
+        :type text: ``str``
+        :rtype: ``str``
 
         """
         if self.lens is None:
@@ -212,7 +304,8 @@ class Tree(object):
         If it is a master node it renders back to text applying the lens parser
         and saves the result to the file in ``path``.
 
-        If ``text`` is given it uses it to merge with the data of the tree.
+        :param text: If given it uses it to merge with the data of the tree.
+        :type text: ``str``
 
         """
         if self.path is None:
@@ -305,13 +398,66 @@ class ListTree(Tree):
     object.
 
     """
+
     # index : As it works in getitem set item.
     # raw_index : The self._nodes node intex
     # label_index : The index as it is stored in node.label
 
+
+    def __init__(self, parent=None, nodes=None, lens=None, path=None,
+            default_node_class=None):
+        """
+
+        :param parent: If it is a children tree, the parent node.
+        :type param: :class:`TreeNode`
+        :param nodes: The list of nodes that the tree manages
+        :type nodes: list of :class:`TreeNode`
+        :param lens: If it is a master tree, it stores the lens object
+            to allow the ``put`` method to render back the text file.
+        :type lens: :class:`heracles.base.Lens`
+        :param path: If it is a master tree, it stores the path of the
+            parsed file to allow the ``save`` method to store the changes.
+        :type path: ``str``
+        :param default_node_class: The default node class
+            to be used when creating automaticaly new nodes.
+        :type default_node_class: :class:`TreeNode` or :class:`ListTreeNode`
+
+        Examples::
+            
+            # Create ListTree object
+            >>> from heracles import ListTree, TreeNode
+            >>> t = ListTree()
+            # Add new node
+            >>> t.add_new_node("first")
+            >>> t[0]
+            <TreeNode label:'1' value:'first' children:0>
+            # You can see label index is always 1 + python index
+            # Now lets add a non indexed node
+            >>> t['#comment'] = "None"
+            # The node is not accesible from numeric index
+            >>> t[1]
+            ...
+            IndexError: Index out of range
+            # But it is accessible though its label.
+            >>> t['#comment']
+            <LabelNodeList label:'#comment' values:'None'>
+            # Lets add another node
+            >>> t.add_new_node("second")
+            >>> t[2]
+            <TreeNode label:'2' value:'second' children:0>
+            # The comment is hidden and the second item is the third
+            # on the list of nodes
+
+        """
+        super(ListTree, self).__init__(parent=parent, nodes=nodes, lens=lens, path=path,
+            default_node_class=default_node_class)
+
     def insert(self, index, tree_node):
         """
         Insert ``node`` into ``index`` place.
+
+        :param node: The instance of :class:`TreeNode` to get its index.
+        :rtype: ``int``
 
         """
         assert(isinstance(tree_node, TreeNode)) 
@@ -326,6 +472,9 @@ class ListTree(Tree):
         """
         Appends ``node`` to tree.
 
+        :param node: The instance of :class:`TreeNode` or :class:`ListTreeNode`
+            to append.
+        
         """
         assert(isinstance(tree_node, TreeNode))
         last_index = len(self)
@@ -335,6 +484,10 @@ class ListTree(Tree):
     def index(self, tree_node):
         """
         If the tree stores ``node`` returns its position in the tree.
+
+        :param node: The instance of :class:`TreeNode` or :class:`ListTreeNode` 
+            to get its index.
+        :rtype: ``int``
 
         """
         assert(isinstance(tree_node, TreeNode))
@@ -350,6 +503,9 @@ class ListTree(Tree):
     def remove(self, tree_node):
         """
         If the tree stores ``node`` removes the node from the tree.
+
+        :param node: The :class:`TreeNode` or :class:`ListTreeNode` to remove 
+            from tree.
 
         """
         assert(isinstance(tree_node, TreeNode))
@@ -415,7 +571,10 @@ class ListTree(Tree):
                 pass
 
     def _update_index(self, from_index, value):
-        """Updates labels of the next items to keep sequentiality"""
+        """
+        Updates labels of the next items to keep sequentiality
+
+        """
         from_label_index = from_index + 1
         for item in self:
             label = int(item.label)
@@ -456,27 +615,31 @@ class ListTree(Tree):
 
 class TreeNode(object):
     """
-    Basic storage unit of Heracles. Each ``Tree`` contains a list of 
-    ``TreeNode`` instance and of its subclasses.
+    Basic storage unit of Heracles. Each :class:`Tree` or :class:`ListTree` 
+    instance contains a list of :class:`TreeNode` instance or its subclasses.
 
-    ``TreeNode`` stores its children in a ``Tree`` instance.
+    The :attr:`TreeNode.children` is a :class:`Tree` or :class:`ListTree` 
+    instance.
+
     """
     children_class = Tree
 
     def __init__(self, label="", value="", parent=None, children=None, 
             default_children_class=None):
         """
-        ``TreeNode`` contains:
-            ``label`` (str) : A value that classifies the node.
-            ``value`` (str) : The value stored in the node.
-            ``parent`` (TreeNode) : If it is a children node, its parent.
-            ``children`` (list of TreeNode) : The list of nodes that are its
-                children.
-
-        Also you can provide the node with the ``default_children_class`` that 
-        can be used to automatic instantiate them.
-
-
+            :param label: A value that classifies the node.
+            :type label: ``str``
+            :param value: The value stored in the node.
+            :type value: ``str``
+            :param parent: If it is a children node, its parent.
+            :type parent: :class:`TreeNode` or :class:`ListTreeNode`
+            :param children: The list of nodes that are its children.
+            :type children: ``list`` of :class:`TreeNode` or 
+                :class:`ListTreeNode` instances.
+            :param default_children_class: Default node class to instantiate
+                children, can be :class:`TreeNode` or :class:`ListTreeNode`.
+            :type default_children_class: ``type``
+            
         """
         assert(isinstance(label, str) or label is None)
         assert(isinstance(value, str) or value is None)
@@ -501,24 +664,23 @@ class TreeNode(object):
 
 class ListTreeNode(TreeNode):
     """
-    ``TreeNode`` stores its children in a ``Tree`` instance.
+    This is a :class:`TreeNode` subclass to store its children in a 
+    :class:`ListTree` instance.
 
     """
     children_class = ListTree
 
 class LabelNodeList(object):
     """
-    ``LabelNodeList`` is a helper class that allows access to several nodes with
-    the same name.
+    A helper class that allows access to several nodes with the same name.
 
     Nodes can be accessed with a mixture of dict and list methods, so you can 
-    get the container methods to access numerically returning or setting
-    according to the order in the list, or by an string key that represents
-    the value of the node.
+    get the container methods to access numerically returning or setting 
+    according to the order in the list, or by an string key that represents the 
+    value of the node.
 
-    If there is a single node in the list you can use the ``value`` and
+    If there is a single node in the list you can use the ``value`` and 
     ``children`` of the ``LabelNodeList`` instance to access its contents.
-
 
     """
     @classmethod
@@ -526,6 +688,13 @@ class LabelNodeList(object):
         """
         Checks if there are nodes with ``label`` in ``tree`` before 
         instantiating.
+
+        :param tree: The tree that contains the nodes.
+        :type tree: :class:`Tree` or :class:`ListTree`
+        :param label: The label that it is looking to build the 
+            :class:`LabelNodeList`
+        :type label: ``str``
+        :rtype: :class:`LabelNodeList`
 
         """
         i = 0
@@ -589,6 +758,11 @@ class LabelNodeList(object):
         Insert ``node`` into ``index`` place, the order is keept inside the 
         tree.
 
+        :param index: The position where to insert the node.
+        :type index: ``int``
+        :param item: It can be a node or a value to build a new node.
+        :type value: ``str`` or :class:`TreeNode`
+
         """
         assert(isinstance(index, int))
         assert(isinstance(item, str) or isinstance(item, TreeNode))
@@ -612,6 +786,9 @@ class LabelNodeList(object):
         """
         If the tree stores ``node`` removes the node from the tree.
 
+        :param item: The node to remove.
+        :type value: :class:`TreeNode`
+
         """
         if not item in self:
             raise ValueError("Node not in list")
@@ -619,7 +796,10 @@ class LabelNodeList(object):
 
     def append(self, item):
         """
-        Adds a node to the tree setting its label to the LabelNodeList label
+        Adds a node to the tree setting its label to the instance :attr:`label`.
+
+        :param item: It can be a node or a value to build a new node.
+        :type value: ``str`` or :class:`TreeNode`
 
         """
         assert(isinstance(item, str) or isinstance(item, TreeNode))

@@ -2,6 +2,7 @@
 libheracles*/
 *.sw*
 build/
+docs/_build/*
 dist/
 heracles/libs/
 heracles/lenses/

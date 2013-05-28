@@ -1,3 +1,8 @@
+"""
+
+This module includes the core of the Heracles package
+
+"""
 import os
 import ctypes as c
 from fnmatch import fnmatch
@@ -42,15 +47,22 @@ class Heracles(object):
     Main heracles object. Loads lenses into memory and makes them accessible
     to the user.
 
+    Attribute: ``lenses`` - stores the :class:`Lens` instances of the instance. 
+    It is an instance of :class:`HeraclesLenses`.
     """
+
     lenses = HeraclesLenses()
 
     def __init__(self, loadpath=None, flags=0):
         """
-        Inits the heracles object, optional kwargs:
-           ``loadpath`` (list of str) : Paths to search for aditional lenses.
-           ``flags`` (int) : Flags to pass to de libheracles init function, 
+        Can be instantiatd with these parameters:
+
+        :param loadpath: Paths to search for aditional lenses.
+        :type loadpath: list of strings
+        :param flags: Flags to pass to de libheracles init function, 
             mostly useless.
+        :type flags: int
+
         """
 
         if isinstance(loadpath, list):
@@ -94,8 +106,8 @@ class Heracles(object):
         """
         Return the propper lens to parse a file given its path.
 
-        Args:
-            path (str) : Path of the file which its lens we want to edit.
+        :param path: Path of the file which its lens we want to edit.
+        :type path: str
 
         """
         for lens in self.lenses:
@@ -107,10 +119,10 @@ class Heracles(object):
         Returns a Tree object parsing the file given its path.
 
         The Tree object stores the path so it can be saved using its 
-        ``save`` method.
+        :meth:`heracles.tree.Tree.save` method.
 
-        Args:
-            path (str) : Path of the file we want to parse.
+        :param path: Path of the file we want to parse.
+        :type path: str
 
         """
 
@@ -133,16 +145,17 @@ class Lens(object):
     """
     Object that stores an augeas lens parser ready to do get and put operations
 
-    This object is not intended to be instantiated manually but from the internal
-    methods of the ``Heracles`` object instance
+    .. note::
+        This object is not intended to be instantiated manually but from the 
+        internal methods of the :class:`Heracles` object instance
 
     """
     def __init__(self, heracles, module):
         """
-        To init the object it requires:
-
-            ``heracles`` (Heracles) : An heracles object instance
-            ``module`` (struct_module) : A ctypes reference to a module struct.
+            :param heracles: An heracles object instance
+            :type heracles: :class:`Heracles`
+            :param module: A ctypes reference to a module struct.
+            :type module: ``struct_module``
 
         """    
         self.heracles = heracles
@@ -160,6 +173,10 @@ class Lens(object):
         """
         Returns a tree from applying the lens parser to ``text``.
 
+        :param text: The text to parse.
+        :type text: str
+        :rtype: :class:`heracles.tree.Tree` 
+
         """
         hera_get = libheracles.hera_get
         hera_get.restype = c.POINTER(struct_tree)
@@ -174,6 +191,12 @@ class Lens(object):
         lens parser to the lens.
 
         If ``text`` is given it uses it to merge with the data of the tree.
+
+        :param tree: The tree from to generate the text.
+        :type tree: :class:`heracles.tree.Tree`
+        :key text: Optional text to merge in the generation.
+        :type text: str
+        :rtype: str
 
         """
         raw_tree = ManagedRawTree.build_from_tree(tree)
@@ -195,6 +218,10 @@ class Lens(object):
     def check_path(self, path):
         """
         Tests if the given ``path`` matches the criteria of the lens.
+        
+        :param path: A path to search its lens
+        :type path: str
+        :rtype: bool
 
         """
         positive = False

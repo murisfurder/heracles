@@ -6,6 +6,7 @@ from distutils.cmd import Command
 from distutils.errors import CompileError
 from distutils.command.build import build
 from subprocess import call
+from heracles import __version__
 
 LIBDIR = "lib"
 #ORIGIN_FILE = 
@@ -53,7 +54,7 @@ class new_build(build):
     sub_commands = build.sub_commands + [('build_libheracles', lambda x:True)]
 
 setup(name="heracles",
-      version="0.0.4-2",
+      version=__version__,
       author="Jorge Monforte",
       author_email="jorge.monforte@gmail.com",
       packages=find_packages(exclude=["test"]),
