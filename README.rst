@@ -154,3 +154,15 @@ Now with the updated tree object we can regenerate the file.::
     ...
 
 As you can see it updated the file.
+
+------
+Author
+------
+
+Heracles is developed by Jorge Monforte <jorge.monforte@gmail.com> to provide
+its remote compute automation tool of a configuration file parser.
+
+(c) 2013 Jorge Monforte
+
+Distributed under the LGPL license.
+
