@@ -44,6 +44,7 @@ copyright = u'2013, Jorge Monforte'
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 
+os.environ['HERACLES_DISABLE_LIBHERACLES'] = "1"
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), '..')))
 from heracles import __version__
 

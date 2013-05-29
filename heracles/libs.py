@@ -7,6 +7,7 @@ from heracles.exceptions import HeraclesError
 
 LIBRARY_NAME = "libheracles"
 LIBRARY_DIR = "libs"
+ENV_DISABLE = 'HERACLES_DISABLE_LIBHERACLES'
 
 def get_library_name():
     s = system()
@@ -25,4 +26,8 @@ def get_library_path():
     library_name = get_library_name()
     return os.path.join(h_path, LIBRARY_DIR, library_name)
 
-libheracles = ctypes.cdll.LoadLibrary(get_library_path())
+if not ENV_DISABLE in os.environ or os.environ[ENV_DISABLE] == "1":
+    libheracles = ctypes.cdll.LoadLibrary(get_library_path())
+else:
+    print "Warning disabling libheracles. Heracles wont work."
+
