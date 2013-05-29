@@ -58,6 +58,13 @@ the file creating a tree structure easily modifiable with any program, then the
 discarded in the *get* parse because it simultaneously parses the original file
 at the same time it regenerates the modified one.
 
+-------------
+Documentation
+-------------
+
+You can find an alredy compiled version of the docs at 
+https://heracles.readthedocs.org/en/latest/index.html
+
 ------------
 How it works
 ------------
@@ -173,7 +180,8 @@ About
 -----
 
 Heracles is developed by Jorge Monforte <jorge.monforte@gmail.com> to provide
-its remote compute automation tool of a configuration file parser.
+his remote automation tool `Panopticon <https://github.com/llou/panopticon>`_ 
+of a configuration file parser.
 
 Copyright 2013 Jorge Monforte. Distributed under the LGPL license.
 
