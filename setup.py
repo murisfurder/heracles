@@ -1,7 +1,9 @@
 import os
+import sys
 
 # Disable loading of dynamic link libraries
-os.environ['HERACLES_DISABLE_LIBHERACLES'] = "1"
+if sys.argv[1] != 'test':
+    os.environ['HERACLES_DISABLE_LIBHERACLES'] = "1"
 
 from os import chmod
 from stat import S_IRWXU

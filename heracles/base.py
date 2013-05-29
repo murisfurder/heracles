@@ -8,7 +8,7 @@ import ctypes as c
 from fnmatch import fnmatch
 from heracles.structs import struct_heracles, struct_tree, struct_lns_error
 from heracles.exceptions import exception_list, HeraclesError, HeraclesLensError
-from heracles.libs import libheracles
+from heracles.libs import libheracles, disabled_lib
 from heracles.raw import UnmanagedRawTree, ManagedRawTree
 from heracles.util import get_heracles_path
 
@@ -64,6 +64,10 @@ class Heracles(object):
         :type flags: int
 
         """
+
+        if disabled_lib:
+            self._handle = "dummy"
+            return 
 
         if isinstance(loadpath, list):
             for path in loadpath:
@@ -139,7 +143,8 @@ class Heracles(object):
         return "<Heracles object>"
 
     def __del__(self):
-        libheracles.hera_close(self._handle)
+        if not disabled_lib:
+            libheracles.hera_close(self._handle)
 
 class Lens(object):
     """
