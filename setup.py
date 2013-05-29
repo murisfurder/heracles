@@ -1,4 +1,8 @@
 import os
+
+# Disable loading of dynamic link libraries
+os.environ['HERACLES_DISABLE_LIBHERACLES'] = "1"
+
 from os import chmod
 from stat import S_IRWXU
 from setuptools import setup, find_packages
