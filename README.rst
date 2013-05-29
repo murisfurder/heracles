@@ -29,6 +29,19 @@ I have uploaded it to *PIP*, so the easiest way to get it working is through::
 
     $ sudo pip install heracles
 
+-------
+Testing
+-------
+
+To test if heracles runs in your computer before installing you have to build 
+``libheracles`` first::
+
+    $ python setup.py build_libheracles --inplace
+
+Then you can run the test suites by::
+
+    $ python setup.py test
+  
 -----------
 Lens parser
 -----------
