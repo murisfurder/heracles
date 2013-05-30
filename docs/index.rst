@@ -6,15 +6,16 @@
 Heracles's documentation
 ========================
 
+.. include:: ../README.rst
+
+Table of contents
+=================
+
 .. toctree::
     :glob:
 
     api/*
 
-About
-=====
-
-.. include:: ../README.rst
 
 Indices and tables
 ==================

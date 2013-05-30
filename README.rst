@@ -7,6 +7,8 @@ functions. This provides Heracles with a huge collection
 of already built configuration file parsers, you can view `the full list of 
 builtin parsers at augeas.net <http://augeas.net/stock_lenses.html>`_.
 
+Heracles is open source, you can download it at http://github.com/llou/heracles
+
 ------
 Status
 ------
