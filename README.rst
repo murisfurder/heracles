@@ -1,7 +1,11 @@
 A Python lens configuration file parser.
 
-It uses `libheracles <https://github.com/llou/libheracles>`_  to parse files 
-into Python objects.
+It uses `libheracles <https://github.com/llou/libheracles>`_  to parse 
+configuration files into Python objects. *libheracles* is a fork of 
+`augeas <http://augeas.net>`_ that allows straight access to its parser 
+functions. This provides Heracles with a huge collection
+of already built configuration file parsers, you can view `the full list of 
+builtin parsers at augeas.net <http://augeas.net/stock_lenses.html>`_.
 
 ------
 Status
@@ -148,15 +152,16 @@ So if you want to get the first children:::
     >>> print c[0]
     <Heracles.TreeNode label:'type' value:'deb' children:0>
 
-You can modify the tree using standar methods.::
+You can modify the tree using standar methods::
 
     >>> c.remove(n)
     >>> for i in c['component']: print i
     <Heracles.TreeNode label:'component' value:'main' children:0>
     <Heracles.TreeNode label:'component' value:'contrib' children:0>
 
-If you want to set values through it's label you have to remember
-to set the index of list of nodes with that label:::
+If you want to modify an existing entry through it's label you have to 
+remember to set the index of list of nodes with that label. If you don't
+do it, it will append a new entry::
 
     >>> c['uri'][0] = 'http://ftp.uk.debian.org/debian/'
     >>> for n in c: print n
@@ -175,9 +180,9 @@ Now with the updated tree object we can regenerate the file.::
 
 As you can see it updated the file.
 
------
-About
------
+------
+Author
+------
 
 Heracles is developed by Jorge Monforte <jorge.monforte@gmail.com> to provide
 his remote automation tool `Panopticon <https://github.com/llou/panopticon>`_ 
