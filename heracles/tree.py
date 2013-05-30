@@ -634,8 +634,7 @@ class TreeNode(object):
             :param parent: If it is a children node, its parent.
             :type parent: :class:`TreeNode` or :class:`ListTreeNode`
             :param children: The list of nodes that are its children.
-            :type children: ``list`` of :class:`TreeNode` or 
-                :class:`ListTreeNode` instances.
+            :type children: class:`Tree`
             :param default_children_class: Default node class to instantiate
                 children, can be :class:`TreeNode` or :class:`ListTreeNode`.
             :type default_children_class: ``type``
@@ -669,6 +668,27 @@ class ListTreeNode(TreeNode):
 
     """
     children_class = ListTree
+
+    def __init__(self, label="", value="", parent=None, children=None, 
+            default_children_class=None):
+        """
+            :param label: A value that classifies the node.
+            :type label: ``str``
+            :param value: The value stored in the node.
+            :type value: ``str``
+            :param parent: If it is a children node, its parent.
+            :type parent: :class:`TreeNode` or :class:`ListTreeNode`
+            :param children: The list of nodes that are its children.
+            :type children: class:`ListTree`
+            :param default_children_class: Default node class to instantiate
+                children, can be :class:`TreeNode` or :class:`ListTreeNode`.
+            :type default_children_class: ``type``
+            
+        """
+        super(ListTreeNode, self).__init__(label=label, value=value, 
+            parent=parent, children=children, 
+            default_children_class=default_children_class)
+
 
 class LabelNodeList(object):
     """
