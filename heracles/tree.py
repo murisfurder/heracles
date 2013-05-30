@@ -1,10 +1,62 @@
 """
+Heracles data structures are a replica in python of the original `augeas 
+<http://agueas.net>`_ ones. The parsed data in *augeas* is stored in its 
+tree structure that is defined in the file ``src/internal.h`` ::
 
-This module implements the data structures used in the Heracles package.
+    struct tree {
+        struct tree *next;
+        struct tree *parent;    
+        char        *label;    
+        struct tree *children;
+        char        *value;
+        int          dirty;
+        struct span *span;
+    };
+
+This creates an ordered tree structure:
+
+*   *tree* : Each node has a ``parent`` field that relates it to an higher level
+    of the tree and a ``children`` that referes to the first node of a lower
+    level of the tree.
+
+*   *ordered* : Each node of a subtree level [#f1]_ is related with the 
+    following one through the ``next`` field.
+
+
+As you can see there are two string fields: 
+
+*   ``label``: is used to store a text to index the data. Some times it stores
+    the string form of an integer to create a list of ordered nodes starting
+    at the value of 1. 
+    
+*   ``value``: the content stored in the node.
+
+
+In *heracles* threre is no use of the last two definitions ``dirty`` and 
+``span``.
+
+This structure is implemented in the form of the class :class:`TreeNode` and its
+sibling :class:`ListTreeNode`, both contains a `label` and a `value` attribute 
+to store the info, a `parent` attribute to relate to its parent in case of it
+has one and a `children` attribute in form of a :class:`Tree` or 
+:class:`ListTree` to store the subnodes of this one.
+
+To keep the order between the nodes of the same level of a tree branch 
+*heracles* implements the class :class:`Tree` that basically store the node in a
+list (in the hidden attribute *._nodes*) and provides several helping methods to
+assist in the manipulation of the sequence of nodes.
+
+For assisting in the manipulation tree levels [#f1]_ that contains enumeration
+of nodes, those who's labels are a sequence of integers starting at one, 
+*heracles* implements its classes :class:`ListTreeNode` and :class:`ListTree`.
+This allows treating these nodes like an standar Python ``list``, providing 
+extra functionallity to access other non-enumerated nodes that can be en the 
+same tree level [#f1]_.
 
 """
 
-from heracles.exceptions import HeraclesTreeLabelError, HeraclesListTreeError, HeraclesTreeError
+from heracles.exceptions import (HeraclesTreeLabelError, HeraclesListTreeError,
+        HeraclesTreeError)
 from heracles.util import check_int, str_tree
 
 def check_list_nodes(nodes):

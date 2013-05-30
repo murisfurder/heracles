@@ -54,3 +54,9 @@ Auxiliary functions
 .. autofunction:: get_tree_from_nodes
 
 .. autofunction:: get_node
+
+.. rubric:: Footnotes
+
+.. [#f1] by *tree level* and *subtree level* I mean the nodes that share the 
+    same parent.
+
