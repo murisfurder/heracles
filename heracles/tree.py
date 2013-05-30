@@ -369,10 +369,19 @@ class Tree(object):
     # Special methods
 
     def __iter__(self):
+        """
+        Iterates over all nodes.
+
+        """
         for node in self._nodes:
             yield node
 
     def __getitem__(self, name):
+        """
+        If ``name`` is ``str`` returns a :class:`LabelNodeList` of the nodes
+        with *label* ``name``. If it is integer returns ``self._nodes[name]``
+
+        """
         if isinstance(name, basestring):
             return LabelNodeList.build(self, name)
         elif isinstance(name, int):
@@ -384,6 +393,27 @@ class Tree(object):
         self.remove(item)
 
     def __setitem__(self, name, value):
+        """
+        The behaviour depends of the types of the arguments. 
+        
+        If ``name`` is string:
+
+        *   if ``value`` is instance of :class:`TreeNode` appends the node 
+            setting its *label* to ``name``
+        *   if ``value`` is string **appends** a new node with *label* name and 
+            *value* ``value``.
+
+            .. DANGER:: 
+                It doesn't change existing nodes with that label.
+
+        If ``name`` is ``int``:
+
+        *   if ``value`` is instance of :class:`TreeNode` replaces existing node
+            at ``self._nodes[name]`` with ``value``
+        *   if ``value`` is string replaces ``self._nodes[name].value`` with 
+            ``value``.
+
+        """
         assert(isinstance(value, str) or isinstance(value, TreeNode))
         assert(isinstance(name, str) or isinstance(name, int))
         if isinstance(name, str):
@@ -414,16 +444,23 @@ class Tree(object):
         if isinstance(value, str):
             self[index].value = value
         elif isinstance(value, TreeNode):
-            value.tree = self
+            value.parent = self.parent
             self._nodes[index] = value
 
     def __str__(self):
         return str_tree(self)
 
     def __repr__(self):
-        return "<%s nodes:%s>" % (self.__class__.__name__,",".join(map(str, self._nodes)))
+        return "<%s nodes:%s>" % (self.__class__.__name__,",".join(map(str, 
+            self._nodes)))
 
     def __contains__(self, value):
+        """
+        If ``value`` is :class:`TreeNode` check if it is in ``self._nodes``, 
+        if it is string checks if there is any node with ``value`` as label.
+
+        """
+
         if isinstance(value, TreeNode):
             return value in self._nodes
         elif isinstance(value, str):
@@ -435,6 +472,10 @@ class Tree(object):
             raise HeraclesTreeError('Unsupported type')
 
     def __len__(self):
+        """
+        Returns the number of all nodes.
+
+        """
         return len(self._nodes)
 
     def serialize(self):
@@ -645,7 +686,58 @@ class ListTree(Tree):
             value.parent = self.parent
             self._nodes[raw_index] = value
 
+    def __getitem__(self, name):
+        """
+        If ``name`` is ``str`` returns a :class:`LabelNodeList` of the nodes
+        with *label* ``name``. If it is integer returns the **indexed** node at
+        position ``name``.
+
+        """
+        return super(ListTree, self).__getitem__(name)
+
+    def __setitem__(self, name, value):
+        """
+        The behaviour depends of the types of the arguments. 
+        
+        If ``name`` is string:
+
+        *   if ``value`` is instance of :class:`TreeNode` appends the node 
+            setting its *label* to ``name``
+        *   if ``value`` is string **appends** a new node with *label* name and 
+            *value* ``value``.
+
+            .. DANGER:: 
+                It doesn't change existing nodes with that label.
+
+        If ``name`` is ``int``:
+
+        *   if ``value`` is instance of :class:`TreeNode` replaces existing 
+            indexed node at position ``name`` with ``value``
+        *   if ``value`` is string replaces indexed node at position ``name`` 
+            with value.
+
+        """
+        assert(isinstance(value, str) or isinstance(value, TreeNode))
+        assert(isinstance(name, str) or isinstance(name, int))
+        if isinstance(name, str):
+            if isinstance(value, str):
+                value = self.default_node_class(label=name, value=value, 
+                        parent=self.parent)
+            elif isinstance(value, TreeNode):
+                value.label = name
+                value.parent = self.parent
+            self._nodes.append(value)
+        elif isinstance(name, int):
+            self._set_item_by_integer(name, value)
+
+
     def __contains__(self, value):
+        """
+        If ``value`` is :class:`TreeNode` check if it is among indexed nodes , 
+        if it is string checks if there is any indexed node with ``value`` 
+        as label.
+
+        """
         assert(isinstance(value, str) or isinstance(value, TreeNode))
         if isinstance(value, TreeNode):
             return value in self._nodes
@@ -655,11 +747,19 @@ class ListTree(Tree):
         return False
 
     def __iter__(self):
+        """
+        Iterates over **indexed** nodes.
+
+        """
         for child in self._nodes:
             if check_int(child.label): 
                 yield child
 
     def __len__(self):
+        """
+        Returns the number of **indexed** nodes in the tree.
+
+        """
         i = 0
         for node in self:
             i += 1
