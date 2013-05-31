@@ -19,9 +19,9 @@ the file creating a tree structure easily modifiable with any program, then the
 discarded in the *get* parse because it simultaneously parses the original file
 at the same time it regenerates the modified one.
 
-Heracles is open source, you can download it at http://github.com/llou/heracles
+Heracles is open source, you can **download** it at http://github.com/llou/heracles
 
-You can find an alredy compiled version of the docs at 
+You can find an alredy compiled version of the **documentation** at 
 https://heracles.readthedocs.org/en/latest/index.html
 
 ------

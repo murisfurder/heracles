@@ -13,7 +13,13 @@ to be instantiated once for app as it is pretty memory hungry as it
 loads all the lenses at the beginning and it takes its time doing it.
 
 .. autoclass:: Heracles
-    :members:
+    :members: 
+
+Lens descriptor
+^^^^^^^^^^^^^^^
+
+.. autoclass:: HeraclesLensesDescriptor
+    :special-members:
 
 
 ------------------

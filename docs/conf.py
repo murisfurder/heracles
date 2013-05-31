@@ -200,3 +200,7 @@ latex_documents = [
 #latex_use_modindex = True
 
 autoclass_content = 'both'
+
+# --------- Autodoc conf ----------------------------
+
+autodoc_member_order = 'bysource'

@@ -20,13 +20,33 @@ from heracles.util import get_heracles_path
 LENS_PATH = "lenses"
 PATH_SEP = ":"
 
-class HeraclesLenses(object):
+class HeraclesLensesDescriptor(object):
+    """
+    An descriptor object to access loaded lenses by the :class:`Heracles`
+    instance. 
+
+    It allows straight access to the lens by its name using standard ``dict``
+    syntax. So if you want to load the lens to parse the sources file of 
+    the Debian/Ubuntu package management system APT you would do::
+
+        >> h = Heracles()
+        >> parser = h.lenses['Aptsources']
+    
+    The names of the lenses can be found `at augeas.net 
+    <http://augeas.net/stock_lenses.html>`_
+
+    """
     def __get__(self, obj, obj_type=None):
-        self.heracles = obj
-        self._handle = obj._handle
+        if obj:
+            self.heracles = obj
+            self._handle = obj._handle
         return self
 
     def __iter__(self):
+        """
+        Iterates over all the loaded lenses of :attr:`self.heracles`.
+
+        """
         module = self._handle.contents.module
         while True:
             if not module:
@@ -37,10 +57,18 @@ class HeraclesLenses(object):
             module = module.contents.next
 
     def __getitem__(self, name):
+        """
+        Search the lenses loaded by the heracles object for a lens with
+        name *name*.
+
+        """
         for module in self:
             if module.name == name:
                 return module
         raise KeyError("Unable to find module %s" % name)
+
+    def __repr__(self):
+        return "<%s>" % self.__class__.__name__
 
 class Heracles(object):
     """
@@ -51,8 +79,11 @@ class Heracles(object):
     It is an instance of :class:`HeraclesLenses`.
     """
 
-    lenses = HeraclesLenses()
+    lenses = HeraclesLensesDescriptor()
+    """
+    Returns a :class:`HeraclesLensesDescriptor` to allow access to the lens database.
 
+    """
     def __init__(self, loadpath=None, flags=0):
         """
         Can be instantiatd with these parameters:
