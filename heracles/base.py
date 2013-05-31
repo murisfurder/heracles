@@ -22,7 +22,7 @@ PATH_SEP = ":"
 
 class HeraclesLensesDescriptor(object):
     """
-    An descriptor object to access loaded lenses by the :class:`Heracles`
+    A descriptor object to access loaded lenses by the :class:`Heracles`
     instance. 
 
     It allows straight access to the lens by its name using standard ``dict``

@@ -28,7 +28,7 @@ https://heracles.readthedocs.org/en/latest/index.html
 Status
 ------
 
-Heracles is now in **alpha**, so you can play with it but it's use in production
+Heracles is now in **alpha**, so you can play with it but its use in production
 is completely discouraged.
 
 I have tested it on Python 2.6 and 2.7 running in Debian and MacOs. It should
@@ -54,8 +54,8 @@ I have uploaded it to *PIP*, so the easiest way to get it working is through::
 Testing
 -------
 
-To test if heracles runs in your computer before installing you have to build 
-``libheracles`` first::
+To test if heracles runs in your computer before installing from the repository 
+you have to build ``libheracles`` first::
 
     $ python setup.py build_libheracles --inplace
 
