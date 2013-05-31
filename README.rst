@@ -7,7 +7,22 @@ functions. This provides Heracles with a huge collection
 of already built configuration file parsers, you can view `the full list of 
 builtin parsers at augeas.net <http://augeas.net/stock_lenses.html>`_.
 
+A lens parser is a kind of parser developed for the 
+`Armony Project <https://alliance.seas.upenn.edu/~harmony/>`_ with 
+the idea to parse a file modify the extracted data and regenerate the file from 
+the data without destroying other information like comments stored in the 
+original file.
+
+A len parser normally works with two methods *get* and *put*, the first parses
+the file creating a tree structure easily modifiable with any program, then the
+*put* method regenerates the file with the modifications keeping the data 
+discarded in the *get* parse because it simultaneously parses the original file
+at the same time it regenerates the modified one.
+
 Heracles is open source, you can download it at http://github.com/llou/heracles
+
+You can find an alredy compiled version of the docs at 
+https://heracles.readthedocs.org/en/latest/index.html
 
 ------
 Status
@@ -48,29 +63,6 @@ Then you can run the test suites by::
 
     $ python setup.py test
   
------------
-Lens parser
------------
-
-A lens parser is a kind of parser developed for the 
-`Armony Project <https://alliance.seas.upenn.edu/~harmony/>`_ with 
-the idea to parse a file modify the extracted data and regenerate the file from 
-the data without destroying other information like comments stored in the 
-original file.
-
-A len parser normally works with two methods *get* and *put*, the first parses
-the file creating a tree structure easily modifiable with any program, then the
-*put* method regenerates the file with the modifications keeping the data 
-discarded in the *get* parse because it simultaneously parses the original file
-at the same time it regenerates the modified one.
-
--------------
-Documentation
--------------
-
-You can find an alredy compiled version of the docs at 
-https://heracles.readthedocs.org/en/latest/index.html
-
 ------------
 How it works
 ------------
