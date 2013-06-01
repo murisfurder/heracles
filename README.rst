@@ -13,7 +13,7 @@ the idea to parse a file modify the extracted data and regenerate the file from
 the data without destroying other information like comments stored in the 
 original file.
 
-A len parser normally works with two methods *get* and *put*, the first parses
+A lens parser normally works with two methods *get* and *put*, the first parses
 the file creating a tree structure easily modifiable with any program, then the
 *put* method regenerates the file with the modifications keeping the data 
 discarded in the *get* parse because it simultaneously parses the original file
