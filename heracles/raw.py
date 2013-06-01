@@ -51,8 +51,8 @@ class BaseRawTree(object):
                 children = self._get_nodes(raw_node.children)
             else:
                 children = []
-            label = raw_node.label
-            value = raw_node.value
+            label = raw_node.label if raw_node.label is not None else ""
+            value = raw_node.value if raw_node.value is not None else ""
             node = get_node(children, label=label, value=value, parent=parent) 
             result.append(node)
             raw_node_p = raw_node.next

@@ -44,6 +44,9 @@ class HeraclesTest(TestCase):
         ntree = self.lens.get(text)
         check_equal_tree(self, self.tree, ntree)
 
+    def test_list_tree(self):
+        self.assertEqual(self.tree[0].value, "")
+
 class FilterTest(TestCase):
     def setUp(self):
         self.text = file(DATA_FILE).read()
