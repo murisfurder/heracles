@@ -399,19 +399,19 @@ class ListTreeTest(TestCase):
 class ListTreeTextAsTable(TestCase):
     def setUp(self):
         t = ListTree()
-        n = t.add_new_node("")
+        n = t.add_new_node("user")
         n.children.add_new_node(label="name", value="Pepe")
         n.children.add_new_node(label="surname", value="Diaz")
         n.children.add_new_node(label="tel", value="555-0000")
-        n = t.add_new_node("")
+        n = t.add_new_node("user")
         n.children.add_new_node(label="name", value="Juan")
         n.children.add_new_node(label="surname", value="Gonzalez")
         n.children.add_new_node(label="tel", value="555-0001")
-        n = t.add_new_node("")
+        n = t.add_new_node("user")
         n.children.add_new_node(label="name", value="Ramon")
         n.children.add_new_node(label="surname", value="Diaz")
         n.children.add_new_node(label="tel", value="555-0002")
-        n = t.add_new_node("")
+        n = t.add_new_node("user")
         n.children.add_new_node(label="name", value="Maria")
         n.children.add_new_node(label="surname", value="Rodriguez")
         n.children.add_new_node(label="tel", value="555-0003")
@@ -431,6 +431,15 @@ class ListTreeTextAsTable(TestCase):
         n = l[1]
         self.assertTrue("555-0002" in n.children['tel'])
 
+    def test_search_3(self):
+        l = self.t.search(name="Pepe", surname="Diaz", __value="user")
+        self.assertEqual(len(l), 1)
+        n = l[0]
+        self.assertTrue("555-0000" in n.children['tel'])
+
+    def test_search_4(self):
+        l = self.t.search(name="Pepe", surname="Diaz", __value="luser")
+        self.assertEqual(len(l), 0)
 
 if __name__ == "__main__":
     import unittest

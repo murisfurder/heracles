@@ -672,13 +672,18 @@ class ListTree(Tree):
         certain key-value pairs expressed as the keywords.
 
         A keyword named ``__value`` referes to the value of the ListTree node
-        **PENDING**
+        itself.
 
-        :param key_values: A dict with the key pairs to query the list tree.
         """
 
         result = []
+        if "__value" in key_values:
+            master_value = key_values.pop("__value")
+        else:
+            master_value = None
         for node in self:
+            if master_value is not None and node.value != master_value:
+                continue
             ok = True
             for key, value in key_values.iteritems():
                 has_pair = False
