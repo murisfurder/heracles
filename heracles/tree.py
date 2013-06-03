@@ -279,12 +279,14 @@ class Tree(object):
         :type value: ``str``
         :param node_class: The class of the node to create either 
             :class:`TreeNode` or :class:`ListTreeNode`
+        :rtype: :class:`TreeNode`
 
         """
         if node_class is None:
             node_class = self.default_node_class
         node = node_class(label=label, value=value)
         self.append(node)
+        return node
 
     def insert_new_node(self, index, label="", value="", node_class=None):
         """
@@ -300,12 +302,14 @@ class Tree(object):
         :type value: ``str``
         :param node_class: The class of the node to create either 
             :class:`TreeNode` or :class:`ListTreeNode`
-
+        :rtype: :class:`TreeNode`
+    
         """
         if node_class is None:
             node_class = self.default_node_class
         node = node_class(label=label, value=value)
         self.insert(index, node)
+        return node
 
     def add_new_list_node(self, label="", value=""):
         """
@@ -316,9 +320,11 @@ class Tree(object):
         :type label: ``str``
         :param value: The ``value`` of the new node.
         :type value: ``str``
+        :rtype: :class:`ListTreeNode`
 
         """
-        self.add_new_node(label=label, value=value, node_class=ListTreeNode)
+        return self.add_new_node(label=label, value=value, 
+                node_class=ListTreeNode)
 
     def insert_new_list_node(self, index, label="", value=""):
         """
@@ -331,9 +337,10 @@ class Tree(object):
         :type label: ``str``
         :param value: The ``value`` of the new node.
         :type value: ``str``
+        :rtype: :class:`ListTreeNode`
 
         """
-        self.insert_new_node(index, label=label, value=value, 
+        return self.insert_new_node(index, label=label, value=value, 
                 node_class=ListTreeNode)
 
     # Lens methods
@@ -615,11 +622,14 @@ class ListTree(Tree):
         Appends a new node with the given ``label`` and ``value``. If not
         ``node_class`` is given it uses the tree's ``default_node_class``.
 
+        :rtype: :class:`TreeNode`
+
         """
         if node_class is None:
             node_class = self.default_node_class
         node = node_class(value=value)
         self.append(node)
+        return node
 
     def insert_new_node(self, index, value, node_class=None):
         """
@@ -627,27 +637,66 @@ class ListTree(Tree):
         position given by ``index``. If not ``node_class`` is given it uses the
         tree's ``default_node_class``.
         
+        :rtype: :class:`TreeNode`
         """
         if node_class is None:
             node_class = self.default_node_class
         node = node_class(value=value)
         self.insert(index, node)
+        return node
 
     def add_new_list_node(self, value):
         """
         Appends a new ``ListTreeNode`` instance with the given ``label`` and 
         ``value``. 
 
+        :rtype: :class:`ListTreeNode`
+
         """
-        self.add_new_node(value, node_class=ListTreeNode)
+        return self.add_new_node(value, node_class=ListTreeNode)
 
     def insert_new_list_node(self, index, value):
         """
         Inserts a new ``ListTreeNode`` instance with the given ``label`` and 
         ``value`` in the position given by ``index``. 
 
+        :rtype: :class:`ListTreeNode`
+
         """
-        self.insert_new_node(index, value, node_class=ListTreeNode)
+        return self.insert_new_node(index, value, node_class=ListTreeNode)
+
+    def search(self, **key_values):
+        """
+        As list trees behaves most of the time like database table: a list of
+        key-values, this method allows you to query the table that have 
+        certain key-value pairs expressed as the keywords.
+
+        A keyword named ``__value`` referes to the value of the ListTree node
+        **PENDING**
+
+        :param key_values: A dict with the key pairs to query the list tree.
+        """
+
+        result = []
+        for node in self:
+            ok = True
+            for key, value in key_values.iteritems():
+                has_pair = False
+                if key in node.children:
+                    sub_nodes = node.children[key]
+                    for sub_node in sub_nodes:
+                        if sub_node.value == value:
+                            has_pair = True
+                            break
+                    if not has_pair:
+                        ok = False
+                        break
+                else:
+                    ok = False
+                    break
+            if ok:
+                result.append(node)
+        return result
 
     def _get_raw_index(self, index):
         l = len(self)
@@ -962,7 +1011,7 @@ class LabelNodeList(object):
         :type value: :class:`TreeNode`
 
         """
-        if not item in self:
+        if not item.label == self.label or not item.value in self:
             raise ValueError("Node not in list")
         self.tree.remove(item)
 
@@ -1019,9 +1068,9 @@ class LabelNodeList(object):
     def __delitem__(self, item):
         self.remove(item)
 
-    def __contains__(self, item):
-        for x in self:
-            if x == item:
+    def __contains__(self, value):
+        for node in self:
+            if node.value == value:
                 return True
         return False
 

@@ -250,6 +250,12 @@ class LabelNodeListTest(TestCase):
         self.assertFalse(n in self.t)
         self.assertEqual(len(self.l), 3)
 
+    def test_contains(self):
+        self.assertTrue("1" in self.t['a'])
+        self.assertTrue("2" in self.t['a'])
+        self.assertTrue("3" in self.t['a'])
+        self.assertTrue("4" in self.t['a'])
+
 class ListTreeTest(TestCase):
     def setUp(self):
         self.t = ListTree()
@@ -389,6 +395,41 @@ class ListTreeTest(TestCase):
         self.assertEqual(len(self.t), 5)
         self.assertEqual(self.t[2].value, "x")
         self.assertTrue(isinstance(self.t[2], ListTreeNode))
+
+class ListTreeTextAsTable(TestCase):
+    def setUp(self):
+        t = ListTree()
+        n = t.add_new_node("")
+        n.children.add_new_node(label="name", value="Pepe")
+        n.children.add_new_node(label="surname", value="Diaz")
+        n.children.add_new_node(label="tel", value="555-0000")
+        n = t.add_new_node("")
+        n.children.add_new_node(label="name", value="Juan")
+        n.children.add_new_node(label="surname", value="Gonzalez")
+        n.children.add_new_node(label="tel", value="555-0001")
+        n = t.add_new_node("")
+        n.children.add_new_node(label="name", value="Ramon")
+        n.children.add_new_node(label="surname", value="Diaz")
+        n.children.add_new_node(label="tel", value="555-0002")
+        n = t.add_new_node("")
+        n.children.add_new_node(label="name", value="Maria")
+        n.children.add_new_node(label="surname", value="Rodriguez")
+        n.children.add_new_node(label="tel", value="555-0003")
+        self.t = t
+
+    def test_search_1(self):
+        l = self.t.search(name="Pepe", surname="Diaz")
+        self.assertEqual(len(l), 1)
+        n = l[0]
+        self.assertTrue("555-0000" in n.children['tel'])
+
+    def test_search_2(self):
+        l = self.t.search(surname="Diaz")
+        self.assertEqual(len(l), 2)
+        n = l[0]
+        self.assertTrue("555-0000" in n.children['tel'])
+        n = l[1]
+        self.assertTrue("555-0002" in n.children['tel'])
 
 
 if __name__ == "__main__":
