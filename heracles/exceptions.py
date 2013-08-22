@@ -67,3 +67,9 @@ class HeraclesListTreeError(HeraclesTreeError):
 class HeraclesTreeNodeError(HeraclesError):
     pass
 
+class HeraclesCompareError(HeraclesError):
+    pass
+
+class HeraclesSortedKeysDictError(HeraclesCompareError):
+    pass
+
