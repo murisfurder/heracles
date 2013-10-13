@@ -23,8 +23,9 @@ class Node(object):
             .addkid(Node("e"))
     """
 
-    def __init__(self, label, children=None):
+    def __init__(self, label="", value="", children=None):
         self.label = label
+        self.value = value
         self.children = children or list()
 
     @staticmethod
@@ -44,6 +45,15 @@ class Node(object):
         :returns: ``self.label``.
         """
         return node.label
+
+    @staticmethod
+    def get_value(node):
+        """
+        Default value of ``get_value`` argument of :py:func:`zss.distance`.
+
+        :returns: ``self.value``.
+        """
+        return node.value
 
     def addkid(self, node, before=False):
         """
