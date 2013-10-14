@@ -1,6 +1,8 @@
 from heracles.tree import Tree, ListTree, TreeNode, ListTreeNode
 from heracles.zss.simple_tree import Node
 
+# TODO Reset de label values to "" in ListTrees
+
 def check_int(value):
     if isinstance(value, int):
         return True
@@ -12,7 +14,8 @@ def check_int(value):
     else:
         return False
 
-def build_root_from_tree(tree):
+def build_root_from_tree(tree, ignore_comments=True):
+    # TODO Add ignore comments
     root = Node(label="root")
     for child in tree:
         n = build_node_from_tree_node(child)

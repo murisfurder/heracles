@@ -1094,5 +1094,3 @@ class LabelNodeList(object):
         if len == 0:
             raise HeraclesTreeLabelError('Cannot return the value from an empty label')
         return self[0].value
-
-

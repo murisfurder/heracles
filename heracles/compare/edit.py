@@ -14,6 +14,7 @@ from zss.simple_tree import Node, NodeTreesGenerator
 
 get_children = Node.get_children
 get_label = Node.get_label
+get_value = Node.get_value
 
 INSERT = "insert"
 REMOVE = "remove"
@@ -39,7 +40,10 @@ class EditPathGenerator(object):
         return 1
 
     def update_cost(self, Anode, Bnode):
-        return 0 if get_label(Anode) == get_label(Bnode) else 1
+        if (get_label(Anode) == get_label(Bnode)) and (get_value(Anode) == get_value(Bnode)):
+            return 0
+        else:
+            return 1
 
     def get_tree_edits(self):
         if self.forest_dists is None or self.tree_dists is None:
@@ -124,7 +128,8 @@ class EditPathGenerator(object):
                 m = min(a11, a01, a10)
                 if a11 == m:
                     if fds[x][y] > fds[x-1][y-1]:
-                        yield (UPDATE, self.An[ioff + x], self.Bn[joff + y])
+                        yield (UPDATE, self.An[ioff + x], 
+                                self.Bn[joff + y])
                     x -= 1
                     y -= 1
                 elif a10 == m:
@@ -169,3 +174,70 @@ def get_edit_path_generator_from_set_tree(original, set_tree):
                 n = v
                 e = edit
     return e
+
+
+class EditOperations(object):
+
+    def __init__(self, operations):
+        self.operation = operations
+
+    @property
+    def remove_operations(self):
+        ops = [ (x, x[1].get_path()) for x in self.operations if x[0] == REMOVE ]
+        ops.sort(ops, key=lambda x:len(x[1]),reversed=True)
+        return ops
+
+
+    @property
+    def insert_operations(self):
+        """Return al the insert operations ensuring the increasing order in path
+        length and for each node increasing order in index in the original 
+        parent node."""
+
+        ops = [ x for x in self.operations if x[0] == INSERT ]
+        # Create dict with parents of inserted nodes
+        parents = {}
+        for op in ops:
+            node = op[2]
+            parent = node.parent
+            if parent in parents:
+                parents[parent].append(node)
+            else:
+                parents[parent] = [node]
+        # Sort children so they can be inserted in order to allow straight
+        # use of the original node order
+        for parent, children in parents.iteritems():
+            children.sort(key=lambda x:parent.index(x))
+        # Sort parents by path so the nodes with shorter paths are inserted
+        # first. First we extract paths to avoid calling the computation of
+        # the path each ordering iteration.
+        paths = [ (x, x.get_path()) for x in parents.keys() ]
+        paths.sort(key=lambda x:len(x[1]))
+        # compile data
+        res = []
+        for parent, path in paths:
+            for child in parents[parent]:
+                res.append(child, child.get_path())
+        return res
+
+    @property
+    def update(self):
+        return [ x for x in self.operations if x[0] == UPDATE ]
+
+    def apply(self, tree):
+        for ref_node, path in self.remove_operations:
+            node = tree.search_path(path)
+            node.parent.remove(node)
+        for ref_node, path in self.insert_operations:
+            parent_path=path[0:-1]
+            parent = tree.search_path(parent_path)
+            label = path[-1][0]
+            value = path[-1][1]
+            index = ref_node.get_index()
+            parent.insert(index, label=label, value=value)
+        for op in self.update_operations:
+            path = op.get_path()
+            node = tree.search_path(path)
+            node.label = op[2].label
+            node.value = op[2].value
+

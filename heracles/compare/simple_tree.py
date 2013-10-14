@@ -23,10 +23,11 @@ class Node(object):
             .addkid(Node("e"))
     """
 
-    def __init__(self, label="", value="", children=None):
+    def __init__(self, label="", value="", children=None, parent=None):
         self.label = label
         self.value = value
         self.children = children or list()
+        self.parent = parent
 
     @staticmethod
     def get_children(node):
@@ -61,7 +62,30 @@ class Node(object):
         """
         if before:  self.children.insert(0, node)
         else:   self.children.append(node)
+        node.parent = self
         return self
+
+    def get_path(self):
+        path = self.parent.get_path() if self.parent is not None else []
+        path.append((self.label, self.value))
+        return path
+
+    def get_index(self):
+        return self.parent.index(self)
+
+    def search_path(self, path):
+        label = path[0][0]
+        value = path[0][1]
+        remainder = path[1:]
+        for c in self.children:
+            if c.label == label and c.value == value:
+                if remainder:
+                    return c.get_path(remainder)
+                else:
+                    return c
+        #TODO Add a propper exception here
+        raise Exception("Unable to find path")
+            
 
     def get(self, label):
         """:returns: Child with the given label."""
@@ -123,6 +147,7 @@ class SetNode(Node):
         Add the given node as a child of this node.
         """
         self.children.add(node)
+        node.parent = self
         return self
 
 
